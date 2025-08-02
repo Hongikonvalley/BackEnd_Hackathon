@@ -1,0 +1,29 @@
+server:
+  port: 8080
+
+kakao:
+  client-id: d599c4d57b813341c889a31b401d7f31
+  redirect-uri: http://localhost:3000/auth/callback
+
+spring:
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    database-platform: org.hibernate.dialect.H2Dialect
