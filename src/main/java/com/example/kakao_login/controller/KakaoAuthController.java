@@ -5,14 +5,19 @@ import com.example.kakao_login.dto.KakaoUserInfoDto;
 import com.example.kakao_login.entity.User;
 import com.example.kakao_login.service.KakaoAuthService;
 import com.example.kakao_login.util.JwtUtil;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.BufferedReader;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -35,12 +40,21 @@ public class KakaoAuthController {
     }
     @CrossOrigin(origins = "http://localhost:3000")
     @PostMapping("/kakao")
-    public ResponseEntity<?> kakaoLogin(@RequestBody KakaoCodeRequest codeRequest) {
+    public ResponseEntity<?> kakaoLogin(HttpServletRequest request) {
         try {
-            String code = codeRequest.getCode();
-            log.info("📥 받은 code: {}", code); // 디버깅용 로그
+            System.out.println("🔥 POST /auth/kakao 진입함");
 
-            String tokenJson = kakaoAuthService.getAccessToken(code);
+            // Body raw 읽기
+            BufferedReader reader = request.getReader();
+            String body = reader.lines().collect(Collectors.joining(System.lineSeparator()));
+            System.out.println("📦 Raw Body: " + body);
+
+            // JSON 파싱
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, String> payload = mapper.readValue(body, new TypeReference<>() {});
+            System.out.println("✅ Parsed code: " + payload.get("code"));
+
+            String tokenJson = kakaoAuthService.getAccessToken(payload.get("code"));
             String accessToken = kakaoAuthService.extractAccessToken(tokenJson);
             String userInfoJson = kakaoAuthService.getUserInfo(accessToken);
             KakaoUserInfoDto dto = kakaoAuthService.parseUserInfo(userInfoJson);
@@ -55,9 +69,9 @@ public class KakaoAuthController {
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            log.error("🔥 카카오 로그인 처리 중 예외 발생", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Kakao 인증 중 오류 발생: " + e.getMessage());
+            System.err.println("❌ 예외 발생: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("서버 오류: " + e.getMessage());
         }
     }
 

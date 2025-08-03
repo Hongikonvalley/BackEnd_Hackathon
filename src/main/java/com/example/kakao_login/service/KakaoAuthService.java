@@ -26,6 +26,11 @@ public class KakaoAuthService {
     // 1️⃣ 인가코드로 액세스 토큰 요청
     public String getAccessToken(String code) {
         try {
+            System.out.println("🔎 getAccessToken() 호출됨");
+            System.out.println("🔎 전달된 code: " + code);
+            System.out.println("🔎 client_id: " + kakaoOAuthProperties.getClientId());
+            System.out.println("🔎 redirect_uri: " + kakaoOAuthProperties.getRedirectUri());
+
             String tokenUri = "https://kauth.kakao.com/oauth/token";
 
             HttpHeaders headers = new HttpHeaders();
@@ -40,6 +45,10 @@ public class KakaoAuthService {
             HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
 
             ResponseEntity<String> response = restTemplate.postForEntity(tokenUri, request, String.class);
+
+            System.out.println("✅ Kakao 응답 상태 코드: " + response.getStatusCode());
+            System.out.println("✅ Kakao 응답 바디: " + response.getBody());
+
             return response.getBody();  // JSON (access_token 포함)
 
         } catch (Exception e) {
@@ -48,6 +57,7 @@ public class KakaoAuthService {
             return null;
         }
     }
+
 
 
     // 2️⃣ 액세스 토큰으로 사용자 정보 요청
