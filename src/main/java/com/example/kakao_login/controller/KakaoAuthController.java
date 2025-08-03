@@ -27,7 +27,7 @@ public class KakaoAuthController {
 
     private final KakaoAuthService kakaoAuthService;
 
-    @CrossOrigin(origins = "http://localhost:3000")
+    @CrossOrigin(origins = {"http://localhost:3000", "https://localhost:3000", "http://mutsa.shop", "https://mutsa.shop"})
     @PostMapping("/callback")
     public ResponseEntity<?> kakaoCallback(@RequestParam("code") String code) throws Exception {
         String tokenJson = kakaoAuthService.getAccessToken(code);
@@ -38,7 +38,7 @@ public class KakaoAuthController {
         String jwt = JwtUtil.createJwt(user);
         return ResponseEntity.ok().body(jwt);
     }
-    @CrossOrigin(origins = "http://localhost:3000")
+    @CrossOrigin(origins = {"http://localhost:3000", "https://localhost:3000", "http://mutsa.shop", "https://mutsa.shop"})
     @PostMapping("/kakao")
     public ResponseEntity<?> kakaoLogin(HttpServletRequest request) {
         try {
