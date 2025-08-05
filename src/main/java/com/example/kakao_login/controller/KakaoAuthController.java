@@ -2,6 +2,7 @@ package com.example.kakao_login.controller;
 
 import com.example.kakao_login.dto.KakaoCodeRequest;
 import com.example.kakao_login.dto.KakaoUserInfoDto;
+import com.example.kakao_login.dto.TokenResponseDto;
 import com.example.kakao_login.entity.User;
 import com.example.kakao_login.service.KakaoAuthService;
 import com.example.kakao_login.util.JwtUtil;
@@ -40,39 +41,25 @@ public class KakaoAuthController {
     }
     @CrossOrigin(origins = {"http://localhost:3000", "https://localhost:3000", "http://mutsa.shop", "https://mutsa.shop"})
     @PostMapping("/kakao")
-    public ResponseEntity<?> kakaoLogin(HttpServletRequest request) {
-        try {
-            System.out.println("🔥 POST /auth/kakao 진입함");
+    public ResponseEntity<TokenResponseDto> kakaoLogin(
+            @RequestBody KakaoCodeRequest codeReq) {
 
-            // Body raw 읽기
-            BufferedReader reader = request.getReader();
-            String body = reader.lines().collect(Collectors.joining(System.lineSeparator()));
-            System.out.println("📦 Raw Body: " + body);
+        String code = codeReq.getCode();
+        // 1) 인가 코드로 토큰 요청
+        String tokenJson = kakaoAuthService.getAccessToken(code);
+        String accessToken = kakaoAuthService.extractAccessToken(tokenJson);
 
-            // JSON 파싱
-            ObjectMapper mapper = new ObjectMapper();
-            Map<String, String> payload = mapper.readValue(body, new TypeReference<>() {});
-            System.out.println("✅ Parsed code: " + payload.get("code"));
+        // 2) 토큰으로 사용자 정보 조회
+        String userInfoJson = kakaoAuthService.getUserInfo(accessToken);
+        KakaoUserInfoDto userDto = kakaoAuthService.parseUserInfo(userInfoJson);
 
-            String tokenJson = kakaoAuthService.getAccessToken(payload.get("code"));
-            String accessToken = kakaoAuthService.extractAccessToken(tokenJson);
-            String userInfoJson = kakaoAuthService.getUserInfo(accessToken);
-            KakaoUserInfoDto dto = kakaoAuthService.parseUserInfo(userInfoJson);
-            User user = kakaoAuthService.registerOrLogin(dto);
+        // 3) 회원 등록 또는 로그인 후 JWT 생성
+        User user = kakaoAuthService.registerOrLogin(userDto);
+        String jwt = JwtUtil.createJwt(user);
 
-            String jwt = JwtUtil.createJwt(user);
-
-            Map<String, String> response = new HashMap<>();
-            response.put("accessToken", jwt);
-            response.put("refreshToken", "dummy-refresh-token");
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            System.err.println("❌ 예외 발생: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(500).body("서버 오류: " + e.getMessage());
-        }
+        // 4) 응답 DTO 반환
+        TokenResponseDto response = new TokenResponseDto(jwt, "dummy-refresh-token");
+        return ResponseEntity.ok(response);
     }
 
 }
