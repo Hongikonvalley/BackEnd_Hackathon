@@ -27,19 +27,24 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
+                .csrf(csrf -> csrf.disable())                // 전역 비활성화 (JWT 기반 API면 이게 보통)
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
-                        // ✅ 공개 엔드포인트
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()          // CORS preflight
+                        // 공개: 헬스/인포만
+                        .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
+                        // 보호: 그 외 액추에이터는 ADMIN
+                        .requestMatchers("/actuator/**").hasRole("ADMIN")
+
+                        // 기타 공개 엔드포인트
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/search/**").permitAll()
-                        .requestMatchers("/actuator/**", "/error").permitAll()
-                        .requestMatchers("/auth/**", "/kakao/**", "/oauth/**").permitAll()
-                        // 그 외는 인증 필요
+                        .requestMatchers("/error", "/auth/**", "/kakao/**", "/oauth/**").permitAll()
+
+                        // 나머지는 인증 필요
                         .anyRequest().authenticated()
                 )
-                // JWT 필터는 UsernamePasswordAuthenticationFilter 앞에
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
 
         return http.build();
     }
