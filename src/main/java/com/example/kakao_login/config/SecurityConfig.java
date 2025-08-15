@@ -4,6 +4,7 @@ import com.example.kakao_login.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -38,6 +39,33 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 // JWT 필터는 UsernamePasswordAuthenticationFilter 앞에
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    @Bean
+    @Order(0)
+    public SecurityFilterChain actuatorChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/actuator/**")
+                .authorizeHttpRequests(a -> a.anyRequest().permitAll())
+                .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.disable());
+        return http.build();
+    }
+
+    @Bean
+    public SecurityFilterChain appChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(csrf -> csrf.disable())
+                .cors(Customizer.withDefaults())
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/search/**").permitAll()
+                        .requestMatchers("/error", "/auth/**", "/kakao/**", "/oauth/**").permitAll()
+                        .anyRequest().authenticated()
+                )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
