@@ -3,7 +3,7 @@ server:
 
 kakao:
   client-id: d599c4d57b813341c889a31b401d7f31
-  redirect-uri: http://localhost:3000/auth/callback
+  redirect-uri: http://localhost:3000/auth/callback   # 배포시 프론트 도메인에 맞춰 변경
 
 spring:
   servlet:
@@ -12,17 +12,13 @@ spring:
       force: true
 
   datasource:
-    url: jdbc:mysql://localhost:3306/hackathon_db
-      ?useSSL=false
-      &allowPublicKeyRetrieval=true
-      &serverTimezone=Asia/Seoul
-      &characterEncoding=UTF-8
+    url: jdbc:mysql://mutsa-db.c70gmyqsgx70.ap-northeast-2.rds.amazonaws.com:3306/hackathon_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: wooh
-    password: dngur1213!
+    password: dngur1213
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jackson:
-    property-naming-strategy: SNAKE_CASE   # 응답 필드 스네이크케이스
+    property-naming-strategy: SNAKE_CASE
 
   jpa:
     database-platform: org.hibernate.dialect.MySQL8Dialect
@@ -41,3 +37,7 @@ management:
   endpoint:
     health:
       show-details: "never"
+
+logging:
+  level:
+    org.springframework.security: INFO   # 필요시 DEBUG로 올려서 추적
