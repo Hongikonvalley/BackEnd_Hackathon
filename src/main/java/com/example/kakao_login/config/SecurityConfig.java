@@ -24,42 +24,19 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())                // 전역 비활성화 (JWT 기반 API면 이게 보통)
-                .cors(Customizer.withDefaults())
-                .authorizeHttpRequests(auth -> auth
-                        // 공개: 헬스/인포만
-                        .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
-                        // 보호: 그 외 액추에이터는 ADMIN
-                        .requestMatchers("/actuator/**").hasRole("ADMIN")
-
-                        // 기타 공개 엔드포인트
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/search/**").permitAll()
-                        .requestMatchers("/error", "/auth/**", "/kakao/**", "/oauth/**").permitAll()
-
-                        // 나머지는 인증 필요
-                        .anyRequest().authenticated()
-                )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
-
-        return http.build();
-    }
-
+    // 1) /actuator/health, /actuator/info만 완전 허용 (최우선)
     @Bean
     @Order(0)
-    public SecurityFilterChain actuatorChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain healthInfoChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher("/actuator/**")
-                .authorizeHttpRequests(a -> a.anyRequest().permitAll())
+                .securityMatcher("/actuator/health", "/actuator/health/**", "/actuator/info")
                 .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.disable());
+                .cors(cors -> cors.disable())
+                .authorizeHttpRequests(a -> a.anyRequest().permitAll());
         return http.build();
     }
 
+    // 2) 기본 체인(그 외 전부) + JWT + 액추에이터는 ADMIN
     @Bean
     public SecurityFilterChain appChain(HttpSecurity http) throws Exception {
         http
@@ -67,16 +44,15 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/search/**").permitAll()
                         .requestMatchers("/error", "/auth/**", "/kakao/**", "/oauth/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/search/**").permitAll()
+                        .requestMatchers("/actuator/**").hasRole("ADMIN") // ← 헬스/인포 제외 나머지 액추에이터 보호
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
         return http.build();
     }
 
-    // ✅ CORS (테스트 편의)
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
@@ -85,7 +61,6 @@ public class SecurityConfig {
         cfg.setAllowedHeaders(List.of("*"));
         cfg.setExposedHeaders(List.of("Authorization","Location"));
         cfg.setAllowCredentials(false);
-
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", cfg);
         return source;
