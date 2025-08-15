@@ -2,10 +2,12 @@ package com.example.kakao_login.config;
 
 import com.example.kakao_login.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -15,6 +17,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 @Configuration
+@EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -23,44 +26,36 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors().and()                       // CORS 정책 적용
-                .csrf().disable()
-                .headers().frameOptions().disable()
-                .and()
-                .sessionManagement()
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                .and()
-                .authorizeHttpRequests()
-                // Preflight OPTIONS 요청 허용
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                // 인증 없이 접근 허용할 엔드포인트
-                .requestMatchers("/auth/**", "/api/auth/**", "/h2-console/**").permitAll()
-                .anyRequest().authenticated()
-                .and()
-                // JWT 필터는 UsernamePasswordAuthenticationFilter 이전에 추가
+                .csrf(csrf -> csrf.disable())
+                .cors(Customizer.withDefaults())
+                .authorizeHttpRequests(auth -> auth
+                        // ✅ 공개 엔드포인트
+                        .requestMatchers(HttpMethod.GET, "/api/v1/search/**").permitAll()
+                        .requestMatchers("/actuator/health", "/error").permitAll()
+                        // (카카오 로그인/토큰 발급 엔드포인트도 공개)
+                        .requestMatchers("/auth/**", "/kakao/**", "/oauth/**").permitAll()
+
+                        // 그 외는 인증 필요
+                        .anyRequest().authenticated()
+                )
+                // JWT 필터는 UsernamePasswordAuthenticationFilter 앞에
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
+    // ✅ CORS (Postman/프론트 테스트 편하게 오픈)
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:3000",
-                "https://localhost:3000",
-                "http://mutsa.shop",
-                "https://mutsa.shop"
-        ));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
+        CorsConfiguration cfg = new CorsConfiguration();
+        cfg.setAllowedOriginPatterns(List.of("*"));
+        cfg.setAllowedMethods(List.of("GET","POST","PUT","DELETE","PATCH","OPTIONS"));
+        cfg.setAllowedHeaders(List.of("*"));
+        cfg.setExposedHeaders(List.of("Authorization","Location"));
+        cfg.setAllowCredentials(false);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration("/**", cfg);
         return source;
     }
-
-
-
 }
