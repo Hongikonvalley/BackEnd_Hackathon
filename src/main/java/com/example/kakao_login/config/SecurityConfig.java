@@ -30,11 +30,10 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
                         // ✅ 공개 엔드포인트
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()          // CORS preflight
                         .requestMatchers(HttpMethod.GET, "/api/v1/search/**").permitAll()
-                        .requestMatchers("/actuator/health", "/error").permitAll()
-                        // (카카오 로그인/토큰 발급 엔드포인트도 공개)
+                        .requestMatchers("/actuator/**", "/error").permitAll()
                         .requestMatchers("/auth/**", "/kakao/**", "/oauth/**").permitAll()
-
                         // 그 외는 인증 필요
                         .anyRequest().authenticated()
                 )
@@ -44,7 +43,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // ✅ CORS (Postman/프론트 테스트 편하게 오픈)
+    // ✅ CORS (테스트 편의)
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();

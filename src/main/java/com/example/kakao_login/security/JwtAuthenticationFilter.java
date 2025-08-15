@@ -15,27 +15,57 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     // 필터를 적용하지 않을 URL 패턴들
-    private static final List<String> EXCLUDE_URLS = List.of(
-            "/auth/",
-            "/api/auth/",
-            "/h2-console/"
+    private static final List<String> EXCLUDE_URL_PREFIXES = List.of(
+            "/api/v1/search/", // 검색 API 전체 공개
+            "/actuator/",      // 헬스/인포 등
+            "/auth/",          // 로그인/토큰 등
+            "/kakao/",
+            "/oauth/",
+            "/h2-console/"     // (개발용)
+    );
+
+    // 공개 “정확 경로”(슬래시로 끝나지 않는 단건)
+    private static final Set<String> EXCLUDE_EXACT_PATHS = Set.of(
+            "/error",           // 스프링 에러 핸들러
+            "/actuator/health"  // 혹시 모를 정확 경로 매칭(안전빵)
     );
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        String path = request.getRequestURI();
-        // OPTIONS (Preflight) 요청도 스킵
+        // 1) 프리플라이트(OPTIONS)는 무조건 스킵
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             return true;
         }
-        // EXCLUDE_URLS 로 시작하면 필터 동작하지 않음
-        return EXCLUDE_URLS.stream().anyMatch(path::startsWith);
+
+        // 2) contextPath 제거한 “정규화된 경로”로 비교
+        String uri = request.getRequestURI();                 // 예) /app/api/...
+        String ctx = request.getContextPath();                // 예) /app
+        if (ctx != null && !ctx.isEmpty() && uri.startsWith(ctx)) {
+            uri = uri.substring(ctx.length());               // -> /api/...
+        }
+
+        // 3) 정확 경로 화이트리스트
+        if (EXCLUDE_EXACT_PATHS.contains(uri)) {
+            return true;
+        }
+
+        // 4) 접두사(프리픽스) 화이트리스트
+        for (String prefix : EXCLUDE_URL_PREFIXES) {
+            if (uri.startsWith(prefix)) {
+                return true;                                  // 공개 경로면 필터 비적용
+            }
+        }
+
+        // 5) 나머지는 필터 적용
+        return false;
     }
+
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -48,7 +78,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 ? header.substring(7)
                 : null;
 
-        // 1) 토큰이 없으면 → 익명으로 통과 (permitAll 경로는 그대로 통과됨)
+        // 토큰이 없으면: 익명으로 계속 진행 (permitAll은 통과, 보호 경로는 EntryPoint가 401 처리)
         if (token == null || token.isBlank()) {
             filterChain.doFilter(request, response);
             return;
@@ -62,30 +92,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     new UsernamePasswordAuthenticationToken(userId, null, java.util.Collections.emptyList());
             SecurityContextHolder.getContext().setAuthentication(auth);
 
-            filterChain.doFilter(request, response);
-            return;
-
-        } catch (io.jsonwebtoken.ExpiredJwtException e) {
-            // 2) 토큰 만료: 공개 경로면 통과, 아니면 401
-            if (isPublic(request)) {
-                filterChain.doFilter(request, response);
-                return;
-            }
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Access token expired");
-            return;
-
         } catch (Exception e) {
-            // 3) 토큰 불량: 공개 경로면 통과, 아니면 401(혹은 403)
-            if (isPublic(request)) {
-                filterChain.doFilter(request, response);
-                return;
-            }
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Invalid token");
-            return;
+            // 만료/불량 등 어떤 예외라도: 컨텍스트만 비우고 계속 진행
+            SecurityContextHolder.clearContext();
+            // 여기서 response.setStatus(...) 쓰지 말 것!
         }
+
+        filterChain.doFilter(request, response);
     }
+
 
     private boolean isPublic(HttpServletRequest req) {
         String uri = req.getRequestURI();
