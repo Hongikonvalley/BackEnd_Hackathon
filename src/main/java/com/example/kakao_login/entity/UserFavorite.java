@@ -2,11 +2,14 @@ package com.example.kakao_login.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.UuidGenerator;
+
+import java.time.LocalDateTime;
 
 /**
  * 사용자 즐겨찾기 정보 엔티티
- * - 사용자가 즐겨찾기한 매장 정보를 관리
- * - 사용자와 매장 간의 N:M 관계를 1:N으로 정규화
+ * - 단순한 즐겨찾기 ON/OFF 기능
+ * - 하드 삭제 방식 (isActive 없음)
  */
 @Entity
 @Table(name = "user_favorites", 
@@ -15,7 +18,6 @@ import lombok.*;
     },
     indexes = {
         @Index(name = "idx_favorite_user_id", columnList = "user_id"),
-        @Index(name = "idx_favorite_store_id", columnList = "store_id"),
         @Index(name = "idx_favorite_created", columnList = "user_id, created_at desc")
     }
 )
@@ -23,9 +25,10 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UserFavorite extends BaseEntity {
+public class UserFavorite {
 
     @Id
+    @UuidGenerator
     @Column(length = 36)
     private String id; // 즐겨찾기 ID
 
@@ -35,12 +38,12 @@ public class UserFavorite extends BaseEntity {
     @Column(name = "store_id", nullable = false, length = 36)
     private String storeId; // 매장 ID
 
-    /**
-     * 비즈니스 로직: 즐겨찾기 상태 확인
-     * @return 활성 상태 여부
-     */
-    public boolean isActive() {
-        return super.getIsActive();
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt; // 즐겨찾기 등록일시
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
     }
 
     /**
