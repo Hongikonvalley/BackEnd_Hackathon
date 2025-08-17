@@ -31,6 +31,12 @@ public record StoreDetailResponse(
     @JsonProperty("rating_avg")
     Double ratingAvg, // 평균평점 (소수점2자리)
     
+    @JsonProperty("total_reviews")
+    Integer totalReviews, // 총 리뷰 수
+    
+    @JsonProperty("average_rating")
+    Double averageRating, // 리뷰 평균 평점
+    
     @JsonProperty("business_info")
     BusinessInfo businessInfo, // 영업정보
     
@@ -145,7 +151,9 @@ public record StoreDetailResponse(
             com.example.kakao_login.entity.Store store,
             List<MenuItemDto> menus,
             DiscountInfo discountInfo,
-            UserContext userContext
+            UserContext userContext,
+            Integer totalReviews,
+            Double averageRating
         ) {
             return StoreDetailResponse.builder()
                 .storeId(maskStoreId(store.getId())) // UUID 마스킹
@@ -161,6 +169,8 @@ public record StoreDetailResponse(
                     .build())
                 .ratingAvg(store.getRatingAvg() != null ? 
                     Math.round(store.getRatingAvg().doubleValue() * 100.0) / 100.0 : null)
+                .totalReviews(totalReviews)
+                .averageRating(averageRating)
                 .businessInfo(BusinessInfo.from(store.getBusinessStatus()))
                 .discountInfo(discountInfo)
                 .userContext(userContext)

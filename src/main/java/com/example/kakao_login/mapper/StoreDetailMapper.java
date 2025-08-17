@@ -22,13 +22,17 @@ public class StoreDetailMapper {
      * @param menuItems 메뉴 목록
      * @param deal 할인 정보 (nullable)
      * @param userContext 사용자별 컨텍스트 정보
+     * @param totalReviews 총 리뷰 수
+     * @param averageRating 리뷰 평균 평점
      * @return 매장 상세 응답 DTO
      */
     public StoreDetailResponse toStoreDetailResponse(
         Store store,
         List<MenuItem> menuItems,
         EarlybirdDeal deal,
-        StoreDetailResponse.UserContext userContext
+        StoreDetailResponse.UserContext userContext,
+        Integer totalReviews,
+        Double averageRating
     ) {
         // 메뉴 DTO 변환
         List<StoreDetailResponse.MenuItemDto> menuDtos = mapMenuItems(menuItems);
@@ -41,7 +45,9 @@ public class StoreDetailMapper {
             store,
             menuDtos,
             discountInfo,
-            userContext
+            userContext,
+            totalReviews,
+            averageRating
         );
     }
 

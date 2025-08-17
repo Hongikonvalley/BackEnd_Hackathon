@@ -10,6 +10,7 @@ import com.example.kakao_login.mapper.StoreDetailMapper;
 import com.example.kakao_login.repository.EarlybirdDealRepository;
 import com.example.kakao_login.repository.MenuItemRepository;
 import com.example.kakao_login.repository.StoreRepository;
+import com.example.kakao_login.repository.StoreReviewRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,7 @@ public class StoreDetailService {
     private final StoreRepository storeRepository;
     private final MenuItemRepository menuItemRepository;
     private final EarlybirdDealRepository dealRepository;
+    private final StoreReviewRepository storeReviewRepository;
     private final StoreDetailMapper mapper;
 
     /**
@@ -54,12 +56,21 @@ public class StoreDetailService {
             List<MenuItem> menuItems = findMenuItems(storeId);
             EarlybirdDeal currentDeal = findCurrentDeal(storeId);
 
-            // 3. 사용자별 컨텍스트 생성
+            // 3. 리뷰 통계 조회
+            List<com.example.kakao_login.entity.StoreReview> reviews = storeReviewRepository.findByStoreIdOrderByCreatedAtDesc(storeId);
+            Integer totalReviews = reviews.size();
+            Double averageRating = reviews.isEmpty() ? 0.0 : reviews.stream()
+                .mapToDouble(review -> review.getRating().doubleValue())
+                .average()
+                .orElse(0.0);
+            averageRating = Math.round(averageRating * 10.0) / 10.0; // 소수점 1자리
+
+            // 4. 사용자별 컨텍스트 생성
             StoreDetailResponse.UserContext userContext = createUserContext(userId);
 
-            // 4. DTO 변환 (Mapper에 위임)
+            // 5. DTO 변환 (Mapper에 위임)
             StoreDetailResponse response = mapper.toStoreDetailResponse(
-                store, menuItems, currentDeal, userContext
+                store, menuItems, currentDeal, userContext, totalReviews, averageRating
             );
 
             log.debug("매장 상세 조회 완료 - storeId: {}, 메뉴수: {}", storeId, menuItems.size());

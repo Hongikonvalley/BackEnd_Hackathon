@@ -50,6 +50,21 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 매장 리뷰 서비스 예외 처리 (500)
+     */
+    @ExceptionHandler(StoreReviewServiceException.class)
+    public ResponseEntity<?> handleStoreReviewServiceException(
+        StoreReviewServiceException e, 
+        HttpServletRequest request
+    ) {
+        log.error("매장 리뷰 서비스 오류 - path: {}", request.getRequestURI(), e);
+        
+        return ResponseEntity
+            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(ErrorResponse.internalServerError(e.getMessage(), request.getRequestURI()));
+    }
+
+    /**
      * 유효성 검증 실패 예외 처리 (400)
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
