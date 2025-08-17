@@ -99,8 +99,6 @@ public class StoreReviewService {
             .visitorTags(Collections.emptyList())
             .aiSummary(StoreReviewsResponse.AiSummary.builder()
                 .content("아직 리뷰가 없습니다.")
-                .totalReviews(0)
-                .averageRating(0.0)
                 .build())
             .photoReviews(Collections.emptyList())
             .generalReviews(Collections.emptyList())
@@ -143,7 +141,6 @@ public class StoreReviewService {
      * TODO: 실제로는 OpenAI API 활용
      */
     private StoreReviewsResponse.AiSummary createAiSummary(List<StoreReview> reviews) {
-        int totalReviews = reviews.size();
         double averageRating = reviews.stream()
             .mapToDouble(review -> review.getRating().doubleValue())
             .average()
@@ -154,8 +151,6 @@ public class StoreReviewService {
 
         return StoreReviewsResponse.AiSummary.builder()
             .content(summary)
-            .totalReviews(totalReviews)
-            .averageRating(Math.round(averageRating * 10.0) / 10.0)
             .build();
     }
 

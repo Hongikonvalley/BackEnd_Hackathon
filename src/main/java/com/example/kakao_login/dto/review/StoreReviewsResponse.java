@@ -31,11 +31,7 @@ public record StoreReviewsResponse(
      */
     @Builder
     public record AiSummary(
-        String content, // 요약 내용
-        @JsonProperty("total_reviews")
-        Integer totalReviews, // 총 리뷰 수
-        @JsonProperty("average_rating")
-        Double averageRating // 평균 평점
+        String content // 요약 내용
     ) {}
 
     /**
