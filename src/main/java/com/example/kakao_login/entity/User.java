@@ -20,4 +20,14 @@ public class User {
     private String email;
 
     private String nickname;
+
+    // 연관 관계 (필요시 활성화)
+    // @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    // private List<StoreReview> storeReviews;
+
+    // @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    // private List<UserFavorite> userFavorites;
+
+    // @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    // private List<UserCoupon> userCoupons;
 }
