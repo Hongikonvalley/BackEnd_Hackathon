@@ -27,4 +27,22 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, String> {
         ORDER BY m.sortOrder ASC, m.createdAt ASC
         """)
     List<MenuItem> findActiveByStoreIdOrderBySortOrder(@Param("storeId") String storeId);
+
+    /**
+     * 여러 매장의 첫 번째 메뉴 조회 (즐겨찾기 목록용)
+     * @param storeIds 매장 ID 목록
+     * @return 각 매장의 대표 메뉴
+     */
+    @Query("""
+        SELECT m FROM MenuItem m 
+        WHERE m.storeId IN :storeIds 
+        AND m.isActive = true 
+        AND m.sortOrder = (
+            SELECT MIN(m2.sortOrder) FROM MenuItem m2 
+            WHERE m2.storeId = m.storeId 
+            AND m2.isActive = true
+        )
+        ORDER BY m.storeId, m.sortOrder
+        """)
+    List<MenuItem> findFirstMenuByStoreIds(@Param("storeIds") List<String> storeIds);
 }
