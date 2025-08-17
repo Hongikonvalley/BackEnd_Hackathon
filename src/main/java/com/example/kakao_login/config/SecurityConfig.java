@@ -48,6 +48,8 @@ public class SecurityConfig {
                         .requestMatchers("/error", "/auth/**", "/kakao/**", "/oauth/**", "/h2-console/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/search/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/stores/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/stores/*/favorite").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/stores/*/favorite").permitAll()
                         .requestMatchers("/actuator/**").hasRole("ADMIN") // ← 헬스/인포 제외 나머지 액추에이터 보호
                         .anyRequest().authenticated()
                 )
