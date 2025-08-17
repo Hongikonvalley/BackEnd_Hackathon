@@ -42,10 +42,12 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
+                .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/error", "/auth/**", "/kakao/**", "/oauth/**").permitAll()
+                        .requestMatchers("/error", "/auth/**", "/kakao/**", "/oauth/**", "/h2-console/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/search/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/stores/**").permitAll()
                         .requestMatchers("/actuator/**").hasRole("ADMIN") // ← 헬스/인포 제외 나머지 액추에이터 보호
                         .anyRequest().authenticated()
                 )
