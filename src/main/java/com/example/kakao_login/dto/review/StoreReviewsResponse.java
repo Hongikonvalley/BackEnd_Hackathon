@@ -47,9 +47,7 @@ public record StoreReviewsResponse(
         @JsonProperty("user_nickname")
         String userNickname, // 작성자 닉네임
         Double rating, // 평점 (1.0-5.0)
-        String content, // 리뷰 내용
-        @JsonProperty("created_at")
-        String createdAt // 작성일시 (ISO 8601 형식)
+        String content // 리뷰 내용
     ) {
         public GeneralReview {
             if (rating != null && (rating < 1.0 || rating > 5.0)) {
@@ -65,9 +63,7 @@ public record StoreReviewsResponse(
     public record PhotoReview(
         String id, // 리뷰 ID
         @JsonProperty("representative_image_url")
-        String representativeImageUrl, // 대표 이미지 URL (첫 번째 이미지)
-        @JsonProperty("image_count")
-        Integer imageCount // 전체 이미지 수
+        String representativeImageUrl // 대표 이미지 URL (첫 번째 이미지)
     ) {}
 
     /**
