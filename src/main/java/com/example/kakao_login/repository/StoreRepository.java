@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -27,4 +28,17 @@ public interface StoreRepository extends JpaRepository<Store, String> {
         AND s.isActive = true
         """)
     Optional<Store> findActiveById(@Param("storeId") String storeId);
+
+    /**
+     * 여러 매장의 활성 상태 조회 (즐겨찾기 목록용)
+     * @param storeIds 매장 ID 목록
+     * @return 활성 상태인 매장 목록
+     */
+    @Query("""
+        SELECT s FROM Store s 
+        WHERE s.id IN :storeIds 
+        AND s.isActive = true
+        ORDER BY s.name
+        """)
+    List<Store> findByIdInAndIsActiveTrue(@Param("storeIds") List<String> storeIds);
 }
