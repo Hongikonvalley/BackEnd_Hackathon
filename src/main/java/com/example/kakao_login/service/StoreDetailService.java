@@ -35,6 +35,7 @@ public class StoreDetailService {
     private final MenuItemRepository menuItemRepository;
     private final EarlybirdDealRepository dealRepository;
     private final StoreReviewRepository storeReviewRepository;
+    private final UserFavoriteService userFavoriteService;
     private final StoreDetailMapper mapper;
 
     /**
@@ -66,7 +67,7 @@ public class StoreDetailService {
             averageRating = Math.round(averageRating * 10.0) / 10.0; // 소수점 1자리
 
             // 4. 사용자별 컨텍스트 생성
-            StoreDetailResponse.UserContext userContext = createUserContext(userId);
+            StoreDetailResponse.UserContext userContext = createUserContext(userId, storeId);
 
             // 5. DTO 변환 (Mapper에 위임)
             StoreDetailResponse response = mapper.toStoreDetailResponse(
@@ -129,10 +130,14 @@ public class StoreDetailService {
     /**
      * 사용자별 컨텍스트 정보 생성
      * @param userId 사용자 ID
+     * @param storeId 매장 ID
      * @return 사용자 컨텍스트
      */
-    private StoreDetailResponse.UserContext createUserContext(String userId) {
-        // 현재는 기본값, 향후 즐겨찾기/쿠폰 서비스 연동
-        return mapper.createDefaultUserContext(userId);
+    private StoreDetailResponse.UserContext createUserContext(String userId, String storeId) {
+        // 즐겨찾기 상태 조회
+        boolean isFavorite = userFavoriteService.isFavorite(userId, storeId);
+        
+        // 쿠폰 상태는 기본값 (향후 쿠폰 서비스 연동)
+        return mapper.createUserContext(userId, isFavorite, false);
     }
 }
