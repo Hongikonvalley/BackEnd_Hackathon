@@ -87,14 +87,25 @@ public class StoreDetailMapper {
     }
 
     /**
+     * 사용자 컨텍스트 생성
+     * @param userId 사용자 ID
+     * @param isFavorite 즐겨찾기 여부
+     * @param hasCoupon 쿠폰 보유 여부
+     * @return 사용자 컨텍스트
+     */
+    public StoreDetailResponse.UserContext createUserContext(String userId, boolean isFavorite, boolean hasCoupon) {
+        return StoreDetailResponse.UserContext.builder()
+            .isFavorite(isFavorite)
+            .hasCoupon(hasCoupon)
+            .build();
+    }
+
+    /**
      * 기본 사용자 컨텍스트 생성 (향후 확장용)
      * @param userId 사용자 ID
      * @return 기본 사용자 컨텍스트
      */
     public StoreDetailResponse.UserContext createDefaultUserContext(String userId) {
-        return StoreDetailResponse.UserContext.builder()
-            .isFavorite(false) // TODO: 즐겨찾기 서비스 연동
-            .hasCoupon(false)  // TODO: 쿠폰 서비스 연동
-            .build();
+        return createUserContext(userId, false, false);
     }
 }
