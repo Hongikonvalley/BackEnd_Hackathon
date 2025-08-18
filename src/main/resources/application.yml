@@ -42,4 +42,6 @@ management:
 
 logging:
   level:
-    org.springframework.security: INFO   # 필요시 DEBUG로 올려서 추적
+    org.springframework.security: DEBUG
+
+

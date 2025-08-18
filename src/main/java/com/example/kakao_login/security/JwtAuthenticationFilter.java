@@ -22,18 +22,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     // 필터를 적용하지 않을 URL 패턴들
     private static final List<String> EXCLUDE_URL_PREFIXES = List.of(
-            "/api/v1/search/", // 검색 API 전체 공개
-            "/actuator/",      // 헬스/인포 등
-            "/auth/",          // 로그인/토큰 등
+            "/api/v1/search/",
+            "/actuator/",
+            "/auth/",
             "/kakao/",
-            "/oauth/",
-            "/h2-console/"     // (개발용)
+            "/oauth2/",        // ✅ 추가
+            "/login/oauth2/",  // ✅ 추가
+            "/h2-console/"
     );
 
     // 공개 “정확 경로”(슬래시로 끝나지 않는 단건)
     private static final Set<String> EXCLUDE_EXACT_PATHS = Set.of(
             "/error",           // 스프링 에러 핸들러
-            "/actuator/health"  // 혹시 모를 정확 경로 매칭(안전빵)
+            "/actuator/health",  // 혹시 모를 정확 경로 매칭(안전빵)
+            "/actuator/info"
     );
 
     @Override
