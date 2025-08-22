@@ -31,6 +31,15 @@ public class FavoriteResponse {
     ) {}
 
     /**
+     * 할인 정보
+     */
+    @Builder
+    public record DealInfo(
+        String title, // 할인 제목
+        String description // 할인 설명
+    ) {}
+
+    /**
      * 즐겨찾기 매장 정보
      */
     @Builder
@@ -41,16 +50,10 @@ public class FavoriteResponse {
         @JsonProperty("store_name")
         String storeName, // 매장명
         
-        @JsonProperty("visit_count")
-        Integer visitCount, // 방문 횟수
-        
         @JsonProperty("store_image")
         String storeImage, // 매장 대표 이미지
         
-        @JsonProperty("discount_text")
-        String discountText, // 할인 텍스트 (예: "10% 할인 제공")
-        
-        @JsonProperty("sample_menu")
-        String sampleMenu // 대표 메뉴 1개
+        @JsonProperty("deal_info")
+        DealInfo dealInfo // 할인 정보
     ) {}
 }
