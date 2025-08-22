@@ -39,6 +39,15 @@ public class DataInitializer {
             
             // 가비애 리뷰 데이터 초기화
             initGabiaeReviews();
+            
+            // 그랑주 카페 데이터 초기화
+            initGrangeCafe();
+            
+            // 그랑주 카페 메뉴 데이터 초기화
+            initGrangeMenus();
+            
+            // 그랑주 카페 리뷰 데이터 초기화
+            initGrangeReviews();
         };
     }
 
@@ -178,5 +187,124 @@ public class DataInitializer {
         );
         
         menuItemRepository.saveAll(menus);
+    }
+
+    private void initGrangeCafe() {
+        // 매장이 이미 존재하는지 확인 (이름으로 검색)
+        if (storeRepository.findByName("그랑주").isEmpty()) {
+            Store store = Store.builder()
+                    .userId("user-001")
+                    .name("그랑주")
+                    .address("서울 마포구 서교동 355-2")
+                    .latitude(BigDecimal.valueOf(37.5541563)) // 구글 지도에서 추출한 정확한 좌표
+                    .longitude(BigDecimal.valueOf(126.9214322))
+                    .phone("0507-149-3132")
+                    .businessStatus(BusinessStatus.OPEN) // 9시 오픈
+                    .aiRecommendation("파르페의 달콤한 유혹이 가득한 카페")
+                    .repImageUrl("https://github.com/user-attachments/assets/e3c0d03b-101e-4032-bca2-782fa817d178") // 대표 이미지
+                    .kakaoPlaceId(null) // 카카오 ID 미정
+                    .naverPlaceId("37915747")
+                    .build();
+            storeRepository.save(store);
+        }
+    }
+
+    private void initGrangeMenus() {
+        // 그랑주 카페 찾기
+        Store grangeStore = storeRepository.findByName("그랑주").orElse(null);
+        if (grangeStore == null) {
+            return; // 매장이 없으면 메뉴도 생성하지 않음
+        }
+        
+        String storeId = grangeStore.getId();
+        
+        // 이미 메뉴가 있는지 확인
+        long existingMenuCount = menuItemRepository.countByStoreId(storeId);
+        if (existingMenuCount > 0) {
+            return; // 이미 메뉴가 있으면 생성하지 않음
+        }
+        
+        // 메뉴 데이터 생성
+        List<MenuItem> menus = Arrays.asList(
+                MenuItem.builder()
+                        .storeId(storeId)
+                        .name("아메리카노+베이글 할인")
+                        .price(BigDecimal.valueOf(8000))
+                        .sortOrder(1)
+                        .build()
+        );
+        
+        menuItemRepository.saveAll(menus);
+    }
+
+    private void initGrangeReviews() {
+        // 그랑주 카페 찾기
+        Store grangeStore = storeRepository.findByName("그랑주").orElse(null);
+        if (grangeStore == null) {
+            return; // 매장이 없으면 리뷰도 생성하지 않음
+        }
+        
+        String storeId = grangeStore.getId();
+        
+        // 이미 리뷰가 있는지 확인
+        long existingReviewCount = storeReviewRepository.countByStoreId(storeId);
+        if (existingReviewCount > 0) {
+            return; // 이미 리뷰가 있으면 생성하지 않음
+        }
+        
+        // 리뷰 데이터 생성
+        List<StoreReview> reviews = Arrays.asList(
+                StoreReview.builder()
+                        .storeId(storeId)
+                        .userId("user-커피러버")
+                        .userNickname("커피러버")
+                        .rating(BigDecimal.valueOf(5.0))
+                        .content("파르페가 정말 맛있어요! 아메리카노와 베이글 세트도 추천합니다.")
+                        .build(),
+                StoreReview.builder()
+                        .storeId(storeId)
+                        .userId("user-디저트퀸")
+                        .userNickname("디저트퀸")
+                        .rating(BigDecimal.valueOf(4.5))
+                        .content("홍대 근처에서 찾기 힘든 고급스러운 분위기 카페예요. 파르페 종류가 많아서 좋아요.")
+                        .build(),
+                StoreReview.builder()
+                        .storeId(storeId)
+                        .userId("user-브런치맨")
+                        .userNickname("브런치맨")
+                        .rating(BigDecimal.valueOf(4.0))
+                        .content("9시 오픈이라 아침 브런치하기 좋아요. 베이글과 커피 조합이 완벽해요!")
+                        .build(),
+                StoreReview.builder()
+                        .storeId(storeId)
+                        .userId("user-카페탐험가")
+                        .userNickname("카페탐험가")
+                        .rating(BigDecimal.valueOf(4.5))
+                        .content("인테리어가 예쁘고 사진 찍기 좋은 카페입니다. 파르페도 예쁘게 나와요!")
+                        .build()
+        );
+        
+        List<StoreReview> savedReviews = storeReviewRepository.saveAll(reviews);
+        
+        // 리뷰 이미지 데이터 생성 (실제 이미지 URL 사용)
+        List<ReviewImage> images = Arrays.asList(
+                ReviewImage.builder()
+                        .reviewId(savedReviews.get(0).getId()) // 커피러버 리뷰
+                        .imageUrl("https://github.com/user-attachments/assets/8944f897-d6f3-42d8-9792-febfa1b7d7f2")
+                        .sortOrder(1)
+                        .build(),
+                ReviewImage.builder()
+                        .reviewId(savedReviews.get(1).getId()) // 디저트퀸 리뷰
+                        .imageUrl("https://github.com/user-attachments/assets/341ecefc-ef88-4acc-be14-7c69fe5c9b79")
+                        .sortOrder(1)
+                        .build(),
+                ReviewImage.builder()
+                        .reviewId(savedReviews.get(2).getId()) // 브런치맨 리뷰
+                        .imageUrl("https://github.com/user-attachments/assets/a1394394-f487-4c33-bca9-93438a3b3cbc")
+                        .sortOrder(1)
+                        .build()
+        );
+        
+        reviewImageRepository.saveAll(images);
     }
 }
