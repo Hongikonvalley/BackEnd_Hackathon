@@ -36,6 +36,7 @@ public class StoreReviewService {
     private final StoreReviewRepository storeReviewRepository;
     private final ReviewImageRepository reviewImageRepository;
     private final UserRepository userRepository;
+    private final UserPointService userPointService;
 
 
 
@@ -210,13 +211,16 @@ public class StoreReviewService {
             // 1. 리뷰 존재 여부 및 권한 확인
             StoreReview review = findReviewByIdAndValidateAccess(reviewId, userId);
 
-            // 2. 리뷰 이미지 삭제 (CASCADE 대신 명시적 삭제)
+            // 2. 포인트 차감 (리뷰 삭제 시 10포인트)
+            userPointService.spendPoints(userId, 10);
+
+            // 3. 리뷰 이미지 삭제 (CASCADE 대신 명시적 삭제)
             reviewImageRepository.deleteByReviewId(reviewId);
 
-            // 3. 리뷰 삭제
+            // 4. 리뷰 삭제
             storeReviewRepository.delete(review);
 
-            log.debug("리뷰 삭제 완료 - reviewId: {}", reviewId);
+            log.debug("리뷰 삭제 완료 - reviewId: {}, 포인트 차감: 10", reviewId);
 
         } catch (ReviewNotFoundException | ReviewAccessDeniedException e) {
             throw e; // 재던짐 (Controller에서 적절한 HTTP 상태 코드 처리)
@@ -299,7 +303,10 @@ public class StoreReviewService {
                 reviewImageRepository.saveAll(reviewImages);
             }
 
-            // 4. DTO 변환
+            // 4. 포인트 획득 (리뷰 작성 시 10포인트)
+            userPointService.earnPoints(userId, 10);
+
+            // 5. DTO 변환
             StoreReviewsResponse.Review response = StoreReviewsResponse.Review.builder()
                 .id(savedReview.getId())
                 .userNickname(savedReview.getUserNickname())
@@ -307,7 +314,7 @@ public class StoreReviewService {
                 .content(savedReview.getContent())
                 .build();
 
-            log.debug("리뷰 작성 완료 - reviewId: {}", savedReview.getId());
+            log.debug("리뷰 작성 완료 - reviewId: {}, 포인트 획득: 10", savedReview.getId());
             return response;
 
         } catch (IllegalArgumentException e) {
