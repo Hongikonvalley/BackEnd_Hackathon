@@ -23,6 +23,7 @@ public class DataInitializer {
     private final StoreReviewRepository storeReviewRepository;
     private final ReviewImageRepository reviewImageRepository;
     private final MenuItemRepository menuItemRepository;
+    private final EarlybirdDealRepository earlybirdDealRepository;
 
     @Bean
     @Transactional
@@ -36,6 +37,9 @@ public class DataInitializer {
             
             // 가비애 메뉴 데이터 초기화
             initGabiaeMenus();
+            
+            // 가비애 할인 데이터 초기화
+            initGabiaeDeals();
             
             // 가비애 리뷰 데이터 초기화
             initGabiaeReviews();
@@ -90,6 +94,35 @@ public class DataInitializer {
                 storeRepository.save(store);
             }
         );
+    }
+
+    private void initGabiaeDeals() {
+        // 가비애 매장 찾기
+        Store gabiaeStore = storeRepository.findByName("가비애").orElse(null);
+        if (gabiaeStore == null) {
+            return; // 매장이 없으면 할인 정보도 생성하지 않음
+        }
+
+        // 기존 할인 정보가 있는지 확인
+        var existingDeals = earlybirdDealRepository.findTopCurrentByStoreId(gabiaeStore.getId(), java.time.LocalDateTime.now());
+        if (existingDeals.isPresent()) {
+            return; // 이미 할인 정보가 있으면 생성하지 않음
+        }
+
+        // 오전시간 커피 무료 사이즈업 할인 정보 생성
+        EarlybirdDeal deal = EarlybirdDeal.builder()
+                .storeId(gabiaeStore.getId())
+                .title("오전시간 커피 무료 사이즈업")
+                .description("오전 6시~10시 방문시 모든 커피 무료 사이즈업!")
+                .dealType(EarlybirdDeal.DealType.EARLYBIRD)
+                .discountType(EarlybirdDeal.DiscountType.PERCENT)
+                .discountValue("100") // 100% 할인 (무료)
+                .displayText("오전시간 사이즈업")
+                .status(EarlybirdDeal.DealStatus.ACTIVE)
+                .timeWindow("06:00-10:00")
+                .build();
+        
+        earlybirdDealRepository.save(deal);
     }
 
     private void initGabiaeReviews() {
