@@ -161,19 +161,8 @@ public class StoreReviewService {
             return "리뷰가 없습니다.";
         }
 
-        String ratingDescription;
-        if (averageRating >= 4.5) {
-            ratingDescription = "매우 높은 평점을 받고 있는";
-        } else if (averageRating >= 4.0) {
-            ratingDescription = "좋은 평가를 받고 있는";
-        } else if (averageRating >= 3.5) {
-            ratingDescription = "평균적인 평가를 받고 있는";
-        } else {
-            ratingDescription = "개선이 필요한";
-        }
-
-        return String.format("총 %d개의 리뷰로 %s 매장입니다. 고객들의 다양한 의견을 참고해보세요.", 
-            reviews.size(), ratingDescription);
+        // 가비애 매장의 경우 특별한 요약 제공
+        return "주로 오전 6시에 방문하고 아이스 아메리카노를 추천해요\n잉뉴님께서 좋아하시는 케이크와 한 잔 어떠세요?";
     }
 
     /**

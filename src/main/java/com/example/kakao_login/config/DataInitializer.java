@@ -22,6 +22,7 @@ public class DataInitializer {
     private final StoreRepository storeRepository;
     private final StoreReviewRepository storeReviewRepository;
     private final ReviewImageRepository reviewImageRepository;
+    private final MenuItemRepository menuItemRepository;
 
     @Bean
     @Transactional
@@ -32,6 +33,9 @@ public class DataInitializer {
             
             // 가비애 매장 데이터 초기화
             initGabiaeStore();
+            
+            // 가비애 메뉴 데이터 초기화
+            initGabiaeMenus();
             
             // 가비애 리뷰 데이터 초기화
             initGabiaeReviews();
@@ -63,6 +67,8 @@ public class DataInitializer {
                     .businessStatus(BusinessStatus.OPEN_24H) // 24시간 영업
                     .aiRecommendation("24시간 영업하는 편리한 카페! 오전 시간 커피 무료 사이즈업 혜택을 놓치지 마세요.")
                     .repImageUrl("https://github.com/user-attachments/assets/0bd68d92-7695-4dc6-aada-d518e369fcb1") // 대표 이미지
+                    .kakaoPlaceId("20809319")
+                    .naverPlaceId("1071920016")
                     .build();
             storeRepository.save(store);
         }
@@ -135,5 +141,33 @@ public class DataInitializer {
         );
         
         reviewImageRepository.saveAll(images);
+    }
+
+    private void initGabiaeMenus() {
+        // 가비애 매장 찾기
+        Store gabiaeStore = storeRepository.findByName("가비애").orElse(null);
+        if (gabiaeStore == null) {
+            return; // 매장이 없으면 메뉴도 생성하지 않음
+        }
+        
+        String storeId = gabiaeStore.getId();
+        
+        // 이미 메뉴가 있는지 확인
+        long existingMenuCount = menuItemRepository.countByStoreId(storeId);
+        if (existingMenuCount > 0) {
+            return; // 이미 메뉴가 있으면 생성하지 않음
+        }
+        
+        // 메뉴 데이터 생성
+        List<MenuItem> menus = Arrays.asList(
+                MenuItem.builder()
+                        .storeId(storeId)
+                        .name("아이스 아메리카노 사이즈업")
+                        .price(BigDecimal.valueOf(5000))
+                        .sortOrder(1)
+                        .build()
+        );
+        
+        menuItemRepository.saveAll(menus);
     }
 }
