@@ -13,9 +13,6 @@ public record ReviewCreateRequest(
     @JsonProperty("store_id")
     String storeId, // 매장 ID
     
-    @JsonProperty("user_nickname")
-    String userNickname, // 사용자 닉네임
-    
     @JsonProperty("rating")
     Double rating, // 평점 (1.0-5.0)
     
@@ -36,9 +33,6 @@ public record ReviewCreateRequest(
     public void validate() {
         if (storeId == null || storeId.trim().isEmpty()) {
             throw new IllegalArgumentException("매장 ID는 필수입니다.");
-        }
-        if (userNickname == null || userNickname.trim().isEmpty()) {
-            throw new IllegalArgumentException("사용자 닉네임은 필수입니다.");
         }
         if (rating == null || rating < 1.0 || rating > 5.0) {
             throw new IllegalArgumentException("평점은 1.0에서 5.0 사이여야 합니다.");

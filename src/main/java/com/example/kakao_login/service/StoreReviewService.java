@@ -12,6 +12,7 @@ import com.example.kakao_login.exception.ReviewAccessDeniedException;
 import com.example.kakao_login.repository.ReviewImageRepository;
 import com.example.kakao_login.repository.StoreRepository;
 import com.example.kakao_login.repository.StoreReviewRepository;
+import com.example.kakao_login.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,7 @@ public class StoreReviewService {
     private final StoreRepository storeRepository;
     private final StoreReviewRepository storeReviewRepository;
     private final ReviewImageRepository reviewImageRepository;
+    private final UserRepository userRepository;
 
 
 
@@ -206,11 +208,16 @@ public class StoreReviewService {
             // 2. 매장 존재 여부 확인
             validateStoreExists(request.storeId());
 
-            // 2. 리뷰 엔티티 생성
+            // 3. 사용자 정보 조회
+            String userNickname = userRepository.findById(userId)
+                .map(user -> user.getNickname())
+                .orElse("익명사용자"); // 사용자를 찾을 수 없는 경우 기본값
+
+            // 4. 리뷰 엔티티 생성
             StoreReview review = StoreReview.builder()
                 .storeId(request.storeId())
                 .userId(userId)
-                .userNickname(request.userNickname())
+                .userNickname(userNickname)
                 .rating(BigDecimal.valueOf(request.rating()))
                 .content(request.content())
                 .build();
@@ -241,6 +248,8 @@ public class StoreReviewService {
             log.debug("리뷰 작성 완료 - reviewId: {}", savedReview.getId());
             return response;
 
+        } catch (IllegalArgumentException e) {
+            throw e; // 재던짐 (Controller에서 적절한 HTTP 상태 코드 처리)
         } catch (StoreNotFoundException e) {
             throw e; // 재던짐 (Controller에서 적절한 HTTP 상태 코드 처리)
         } catch (Exception e) {
