@@ -25,4 +25,9 @@ public interface StoreReviewRepository extends JpaRepository<StoreReview, String
         ORDER BY sr.createdAt DESC
     """)
     List<StoreReview> findByStoreIdOrderByCreatedAtDesc(@Param("storeId") String storeId);
+
+    /**
+     * 특정 매장의 리뷰 개수 조회
+     */
+    long countByStoreId(String storeId);
 }

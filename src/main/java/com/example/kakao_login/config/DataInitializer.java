@@ -75,6 +75,26 @@ public class DataInitializer {
         
         String storeId = gabiaeStore.getId();
         
+        // 기존 리뷰가 3개 이상이면 중복 데이터로 간주하고 정리
+        long existingReviewCount = storeReviewRepository.countByStoreId(storeId);
+        if (existingReviewCount >= 3) {
+            // 기존 리뷰와 이미지 모두 삭제
+            List<StoreReview> existingReviews = storeReviewRepository.findByStoreIdOrderByCreatedAtDesc(storeId);
+            List<String> reviewIds = existingReviews.stream()
+                    .map(StoreReview::getId)
+                    .toList();
+            
+            // 이미지 먼저 삭제
+            reviewImageRepository.deleteByReviewIdIn(reviewIds);
+            // 리뷰 삭제
+            storeReviewRepository.deleteAll(existingReviews);
+        }
+        
+        // 이미 리뷰가 있는지 다시 확인
+        if (storeReviewRepository.countByStoreId(storeId) > 0) {
+            return; // 이미 리뷰가 있으면 생성하지 않음
+        }
+        
         // 리뷰 데이터 생성
         List<StoreReview> reviews = Arrays.asList(
                 StoreReview.builder()
