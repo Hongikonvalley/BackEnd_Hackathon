@@ -41,4 +41,11 @@ public interface StoreRepository extends JpaRepository<Store, String> {
         ORDER BY s.name
         """)
     List<Store> findByIdInAndIsActiveTrue(@Param("storeIds") List<String> storeIds);
+
+    /**
+     * 매장명으로 매장 조회
+     * @param name 매장명
+     * @return 매장 정보 Optional
+     */
+    Optional<Store> findByName(String name);
 }

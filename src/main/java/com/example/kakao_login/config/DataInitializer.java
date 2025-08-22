@@ -49,28 +49,35 @@ public class DataInitializer {
     }
 
     private void initGabiaeStore() {
-        if (storeRepository.findActiveById("gabiae-store-001").isEmpty()) {
+        // 매장이 이미 존재하는지 확인 (이름으로 검색)
+        if (storeRepository.findByName("가비애").isEmpty()) {
             Store store = Store.builder()
-                    .id("gabiae-store-001")
                     .userId("user-001")
                     .name("가비애")
                     .address("서울특별시 와우산로 147-1")
-                    .latitude(BigDecimal.valueOf(37.5563)) // 홍대입구역 근처 추정 좌표
-                    .longitude(BigDecimal.valueOf(126.9237))
+                    .latitude(BigDecimal.valueOf(37.5544229)) // 구글 지도에서 추출한 정확한 좌표
+                    .longitude(BigDecimal.valueOf(126.9295616))
+                    .phone("070-773-4007")
                     .businessStatus(BusinessStatus.OPEN_24H) // 24시간 영업
                     .aiRecommendation("24시간 영업하는 편리한 카페! 오전 시간 커피 무료 사이즈업 혜택을 놓치지 마세요.")
+                    .repImageUrl("https://github.com/user-attachments/assets/0bd68d92-7695-4dc6-aada-d518e369fcb1") // 대표 이미지
                     .build();
             storeRepository.save(store);
         }
     }
 
     private void initGabiaeReviews() {
-        String storeId = "gabiae-store-001";
+        // 가비애 매장 찾기
+        Store gabiaeStore = storeRepository.findByName("가비애").orElse(null);
+        if (gabiaeStore == null) {
+            return; // 매장이 없으면 리뷰도 생성하지 않음
+        }
+        
+        String storeId = gabiaeStore.getId();
         
         // 리뷰 데이터 생성
         List<StoreReview> reviews = Arrays.asList(
                 StoreReview.builder()
-                        .id("gabiae-review-001")
                         .storeId(storeId)
                         .userId("user-잉뉴")
                         .userNickname("잉뉴")
@@ -78,7 +85,6 @@ public class DataInitializer {
                         .content("홍대생이면 가비애 다 가봤을듯 아주 애용해요. 6시에 가면 아주 쾌적하고 좋다쿽..")
                         .build(),
                 StoreReview.builder()
-                        .id("gabiae-review-002")
                         .storeId(storeId)
                         .userId("user-펭현숙퀸카")
                         .userNickname("펭현숙퀸카")
@@ -86,7 +92,6 @@ public class DataInitializer {
                         .content("커피 종류 고를 수 있어서 좋고 아침 사이즈업 꿀임")
                         .build(),
                 StoreReview.builder()
-                        .id("gabiae-review-003")
                         .storeId(storeId)
                         .userId("user-레이싱카")
                         .userNickname("레이싱카")
@@ -95,32 +100,28 @@ public class DataInitializer {
                         .build()
         );
         
-        storeReviewRepository.saveAll(reviews);
+        List<StoreReview> savedReviews = storeReviewRepository.saveAll(reviews);
         
-        // 리뷰 이미지 데이터 생성 (실제 이미지가 없으므로 예시 URL 사용)
+        // 리뷰 이미지 데이터 생성 (실제 이미지 URL 사용)
         List<ReviewImage> images = Arrays.asList(
                 ReviewImage.builder()
-                        .id("gabiae-image-001")
-                        .reviewId("gabiae-review-001")
-                        .imageUrl("https://example.com/gabiae-interior-1.jpg")
+                        .reviewId(savedReviews.get(0).getId()) // 잉뉴 리뷰
+                        .imageUrl("https://github.com/user-attachments/assets/6d8a9ce4-6ddd-48fb-b49d-7da679d1b7f4")
                         .sortOrder(1)
                         .build(),
                 ReviewImage.builder()
-                        .id("gabiae-image-002")
-                        .reviewId("gabiae-review-001")
-                        .imageUrl("https://example.com/gabiae-coffee-1.jpg")
+                        .reviewId(savedReviews.get(0).getId()) // 잉뉴 리뷰
+                        .imageUrl("https://github.com/user-attachments/assets/72d30657-1470-4695-bc4c-66d63400b785")
                         .sortOrder(2)
                         .build(),
                 ReviewImage.builder()
-                        .id("gabiae-image-003")
-                        .reviewId("gabiae-review-002")
-                        .imageUrl("https://example.com/gabiae-sizeup-1.jpg")
+                        .reviewId(savedReviews.get(1).getId()) // 펭현숙퀸카 리뷰
+                        .imageUrl("https://github.com/user-attachments/assets/9f0ca3b8-9257-4de3-8c67-bc2cfdbb783f")
                         .sortOrder(1)
                         .build(),
                 ReviewImage.builder()
-                        .id("gabiae-image-004")
-                        .reviewId("gabiae-review-003")
-                        .imageUrl("https://example.com/gabiae-2nd-floor-1.jpg")
+                        .reviewId(savedReviews.get(2).getId()) // 레이싱카 리뷰
+                        .imageUrl("https://github.com/user-attachments/assets/b1e1d9e4-48cc-4997-b367-19b0ecec6fbb")
                         .sortOrder(1)
                         .build()
         );
