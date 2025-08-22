@@ -202,7 +202,7 @@ public class DataInitializer {
                     .businessStatus(BusinessStatus.OPEN) // 9시 오픈
                     .aiRecommendation("파르페의 달콤한 유혹이 가득한 카페")
                     .repImageUrl("https://github.com/user-attachments/assets/e3c0d03b-101e-4032-bca2-782fa817d178") // 대표 이미지
-                    .kakaoPlaceId(null) // 카카오 ID 미정
+                    .kakaoPlaceId("1372734736")
                     .naverPlaceId("37915747")
                     .build();
             storeRepository.save(store);

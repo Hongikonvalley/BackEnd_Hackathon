@@ -1,10 +1,13 @@
 package com.example.kakao_login.service;
 
 import com.example.kakao_login.dto.review.StoreReviewsResponse;
+import com.example.kakao_login.dto.review.ReviewUpdateRequest;
 import com.example.kakao_login.entity.ReviewImage;
 import com.example.kakao_login.entity.StoreReview;
 import com.example.kakao_login.exception.StoreNotFoundException;
 import com.example.kakao_login.exception.StoreReviewServiceException;
+import com.example.kakao_login.exception.ReviewNotFoundException;
+import com.example.kakao_login.exception.ReviewAccessDeniedException;
 import com.example.kakao_login.repository.ReviewImageRepository;
 import com.example.kakao_login.repository.StoreRepository;
 import com.example.kakao_login.repository.StoreReviewRepository;
@@ -76,6 +79,110 @@ public class StoreReviewService {
             log.error("매장 리뷰 조회 중 예상치 못한 오류 - storeId: {}", storeId, e);
             throw new StoreReviewServiceException("매장 리뷰 조회 실패", e);
         }
+    }
+
+    /**
+     * 리뷰 수정
+     * @param reviewId 리뷰 ID
+     * @param userId 사용자 ID (권한 확인용)
+     * @param request 수정 요청 데이터
+     * @return 수정된 리뷰 응답
+     * @throws ReviewNotFoundException 리뷰를 찾을 수 없는 경우
+     * @throws ReviewAccessDeniedException 리뷰 작성자가 아닌 경우
+     * @throws StoreReviewServiceException 서비스 로직 오류 발생 시
+     */
+    @Transactional
+    public StoreReviewsResponse.Review updateReview(String reviewId, String userId, ReviewUpdateRequest request) {
+        log.debug("리뷰 수정 시작 - reviewId: {}, userId: {}", reviewId, userId);
+
+        try {
+            // 1. 리뷰 존재 여부 및 권한 확인
+            StoreReview review = findReviewByIdAndValidateAccess(reviewId, userId);
+
+            // 2. 리뷰 수정
+            if (request.rating() != null) {
+                review.setRating(BigDecimal.valueOf(request.rating()));
+            }
+            if (request.content() != null) {
+                review.setContent(request.content());
+            }
+
+            StoreReview updatedReview = storeReviewRepository.save(review);
+
+            // 3. DTO 변환
+            StoreReviewsResponse.Review response = StoreReviewsResponse.Review.builder()
+                .id(updatedReview.getId())
+                .userNickname(updatedReview.getUserNickname())
+                .rating(updatedReview.getRating().doubleValue())
+                .content(updatedReview.getContent())
+                .build();
+
+            log.debug("리뷰 수정 완료 - reviewId: {}", reviewId);
+            return response;
+
+        } catch (ReviewNotFoundException | ReviewAccessDeniedException e) {
+            throw e; // 재던짐 (Controller에서 적절한 HTTP 상태 코드 처리)
+        } catch (Exception e) {
+            log.error("리뷰 수정 중 예상치 못한 오류 - reviewId: {}", reviewId, e);
+            throw new StoreReviewServiceException("리뷰 수정 실패", e);
+        }
+    }
+
+    /**
+     * 리뷰 삭제
+     * @param reviewId 리뷰 ID
+     * @param userId 사용자 ID (권한 확인용)
+     * @throws ReviewNotFoundException 리뷰를 찾을 수 없는 경우
+     * @throws ReviewAccessDeniedException 리뷰 작성자가 아닌 경우
+     * @throws StoreReviewServiceException 서비스 로직 오류 발생 시
+     */
+    @Transactional
+    public void deleteReview(String reviewId, String userId) {
+        log.debug("리뷰 삭제 시작 - reviewId: {}, userId: {}", reviewId, userId);
+
+        try {
+            // 1. 리뷰 존재 여부 및 권한 확인
+            StoreReview review = findReviewByIdAndValidateAccess(reviewId, userId);
+
+            // 2. 리뷰 이미지 삭제 (CASCADE 대신 명시적 삭제)
+            reviewImageRepository.deleteByReviewId(reviewId);
+
+            // 3. 리뷰 삭제
+            storeReviewRepository.delete(review);
+
+            log.debug("리뷰 삭제 완료 - reviewId: {}", reviewId);
+
+        } catch (ReviewNotFoundException | ReviewAccessDeniedException e) {
+            throw e; // 재던짐 (Controller에서 적절한 HTTP 상태 코드 처리)
+        } catch (Exception e) {
+            log.error("리뷰 삭제 중 예상치 못한 오류 - reviewId: {}", reviewId, e);
+            throw new StoreReviewServiceException("리뷰 삭제 실패", e);
+        }
+    }
+
+    /**
+     * 리뷰 존재 여부 및 접근 권한 확인
+     * @param reviewId 리뷰 ID
+     * @param userId 사용자 ID
+     * @return 리뷰 엔티티
+     * @throws ReviewNotFoundException 리뷰를 찾을 수 없는 경우
+     * @throws ReviewAccessDeniedException 리뷰 작성자가 아닌 경우
+     */
+    private StoreReview findReviewByIdAndValidateAccess(String reviewId, String userId) {
+        StoreReview review = storeReviewRepository.findById(reviewId)
+            .orElseThrow(() -> {
+                log.warn("리뷰를 찾을 수 없음 - reviewId: {}", reviewId);
+                return new ReviewNotFoundException(reviewId);
+            });
+
+        // 리뷰 작성자 확인
+        if (!review.getUserId().equals(userId)) {
+            log.warn("리뷰 접근 권한 없음 - reviewId: {}, userId: {}, reviewUserId: {}", 
+                reviewId, userId, review.getUserId());
+            throw new ReviewAccessDeniedException(reviewId, userId);
+        }
+
+        return review;
     }
 
     /**
