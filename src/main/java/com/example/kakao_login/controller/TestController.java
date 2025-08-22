@@ -23,7 +23,9 @@ public class TestController {
                 .map(store -> Map.of(
                         "id", (Object) store.getId(),
                         "name", (Object) store.getName(),
-                        "address", (Object) store.getAddress()
+                        "address", (Object) store.getAddress(),
+                        "kakao_place_id", (Object) store.getKakaoPlaceId(),
+                        "naver_place_id", (Object) store.getNaverPlaceId()
                 ))
                 .toList();
         return ApiResponse.success(stores);

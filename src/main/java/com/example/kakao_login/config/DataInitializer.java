@@ -55,30 +55,32 @@ public class DataInitializer {
     }
 
     private void initGabiaeStore() {
-        // 기존 가비애 매장이 있으면 삭제 (외부 링크 정보 업데이트를 위해)
-        storeRepository.findByName("가비애").ifPresent(store -> {
-            // 관련 데이터 먼저 삭제
-            String storeId = store.getId();
-            storeReviewRepository.deleteByStoreId(storeId);
-            menuItemRepository.deleteByStoreId(storeId);
-            storeRepository.delete(store);
-        });
-        
-        // 새로운 가비애 매장 생성
-        Store store = Store.builder()
-                .userId("user-001")
-                .name("가비애")
-                .address("서울특별시 와우산로 147-1")
-                .latitude(BigDecimal.valueOf(37.5544229)) // 구글 지도에서 추출한 정확한 좌표
-                .longitude(BigDecimal.valueOf(126.9295616))
-                .phone("070-773-4007")
-                .businessStatus(BusinessStatus.OPEN_24H) // 24시간 영업
-                .aiRecommendation("24시간 영업하는 편리한 카페! 오전 시간 커피 무료 사이즈업 혜택을 놓치지 마세요.")
-                .repImageUrl("https://github.com/user-attachments/assets/0bd68d92-7695-4dc6-aada-d518e369fcb1") // 대표 이미지
-                .kakaoPlaceId("20809319")
-                .naverPlaceId("1071920016")
-                .build();
-        storeRepository.save(store);
+        // 기존 가비애 매장 찾기
+        storeRepository.findByName("가비애").ifPresentOrElse(
+            existingStore -> {
+                // 기존 매장이 있으면 외부 링크 정보만 업데이트
+                existingStore.setKakaoPlaceId("20809319");
+                existingStore.setNaverPlaceId("1071920016");
+                storeRepository.save(existingStore);
+            },
+            () -> {
+                // 매장이 없으면 새로 생성
+                Store store = Store.builder()
+                        .userId("user-001")
+                        .name("가비애")
+                        .address("서울특별시 와우산로 147-1")
+                        .latitude(BigDecimal.valueOf(37.5544229)) // 구글 지도에서 추출한 정확한 좌표
+                        .longitude(BigDecimal.valueOf(126.9295616))
+                        .phone("070-773-4007")
+                        .businessStatus(BusinessStatus.OPEN_24H) // 24시간 영업
+                        .aiRecommendation("24시간 영업하는 편리한 카페! 오전 시간 커피 무료 사이즈업 혜택을 놓치지 마세요.")
+                        .repImageUrl("https://github.com/user-attachments/assets/0bd68d92-7695-4dc6-aada-d518e369fcb1") // 대표 이미지
+                        .kakaoPlaceId("20809319")
+                        .naverPlaceId("1071920016")
+                        .build();
+                storeRepository.save(store);
+            }
+        );
     }
 
     private void initGabiaeReviews() {
