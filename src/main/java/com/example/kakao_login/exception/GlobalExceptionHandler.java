@@ -15,7 +15,10 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
  * 전역 예외 처리 핸들러
  */
 @Slf4j
-@RestControllerAdvice
+// 기존
+// @RestControllerAdvice
+// 변경
+@RestControllerAdvice(basePackages = "com.example.kakao_login.controller")
 public class GlobalExceptionHandler {
 
     /**
@@ -119,13 +122,20 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleGenericException(
-        Exception e, 
-        HttpServletRequest request
-    ) {
-        log.error("예상치 못한 오류 발생 - path: {}", request.getRequestURI(), e);
-        
+            Exception e,
+            HttpServletRequest request
+    ) throws Exception { // ❗ rethrow 가능하게 throws 추가
+        String path = request.getRequestURI();
+
+        // 액추에이터는 전역 핸들러로 처리하지 않고 원래 흐름(스프링 기본 처리)로 넘김
+        if (path.startsWith("/actuator/")) {
+            throw e; // 스프링에게 맡긴다 → health/info는 자체 포맷으로 응답
+        }
+
+        log.error("예상치 못한 오류 발생 - path: {}", path, e);
         return ResponseEntity
-            .status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(ErrorResponse.internalServerError("서버 내부 오류가 발생했습니다.", request.getRequestURI()));
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ErrorResponse.internalServerError("서버 내부 오류가 발생했습니다.", path));
     }
+
 }

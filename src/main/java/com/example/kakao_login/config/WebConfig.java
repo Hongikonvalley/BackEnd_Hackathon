@@ -19,4 +19,9 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowCredentials(true)           // 쿠키/인증 정보 허용 (필요 시)
                 .allowedHeaders("*");             // 모든 헤더 허용
     }
+
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        registry.addViewController("/login").setViewName("login"); // templates/login.html
+    }
 }

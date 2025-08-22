@@ -1,10 +1,6 @@
 server:
   port: 8080
 
-kakao:
-  client-id: d599c4d57b813341c889a31b401d7f31
-  redirect-uri: http://localhost:3000/auth/callback   # 배포시 프론트 도메인에 맞춰 변경
-
 spring:
   servlet:
     encoding:
@@ -38,7 +34,7 @@ management:
         include: health,info
   endpoint:
     health:
-      show-details: "never"
+      show-details: always
 
 logging:
   level:
