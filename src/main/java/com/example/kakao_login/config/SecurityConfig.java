@@ -59,7 +59,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/stores/*/favorite").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/stores/*/favorite").permitAll()
                         
-                        // 리뷰 수정/삭제 API 허용
+                        // 리뷰 CRUD API 허용
+                        .requestMatchers(HttpMethod.POST, "/api/v1/stores/reviews/**").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/v1/stores/reviews/**").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/stores/reviews/**").permitAll()
 

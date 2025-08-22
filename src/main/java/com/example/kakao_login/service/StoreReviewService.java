@@ -2,6 +2,7 @@ package com.example.kakao_login.service;
 
 import com.example.kakao_login.dto.review.StoreReviewsResponse;
 import com.example.kakao_login.dto.review.ReviewUpdateRequest;
+import com.example.kakao_login.dto.review.ReviewCreateRequest;
 import com.example.kakao_login.entity.ReviewImage;
 import com.example.kakao_login.entity.StoreReview;
 import com.example.kakao_login.exception.StoreNotFoundException;
@@ -184,6 +185,65 @@ public class StoreReviewService {
         }
 
         return review;
+    }
+
+    /**
+     * 리뷰 작성
+     * @param userId 사용자 ID
+     * @param request 리뷰 작성 요청 데이터
+     * @return 작성된 리뷰 응답
+     * @throws StoreNotFoundException 매장을 찾을 수 없는 경우
+     * @throws StoreReviewServiceException 서비스 로직 오류 발생 시
+     */
+    @Transactional
+    public StoreReviewsResponse.Review createReview(String userId, ReviewCreateRequest request) {
+        log.debug("리뷰 작성 시작 - storeId: {}, userId: {}", request.storeId(), userId);
+
+        try {
+            // 1. 매장 존재 여부 확인
+            validateStoreExists(request.storeId());
+
+            // 2. 리뷰 엔티티 생성
+            StoreReview review = StoreReview.builder()
+                .storeId(request.storeId())
+                .userId(userId)
+                .userNickname(request.userNickname())
+                .rating(BigDecimal.valueOf(request.rating()))
+                .content(request.content())
+                .build();
+
+            StoreReview savedReview = storeReviewRepository.save(review);
+
+            // 3. 이미지가 있는 경우 ReviewImage 엔티티 생성
+            if (request.imageUrls() != null && !request.imageUrls().isEmpty()) {
+                List<ReviewImage> reviewImages = request.imageUrls().stream()
+                    .map(imageUrl -> ReviewImage.builder()
+                        .reviewId(savedReview.getId())
+                        .imageUrl(imageUrl)
+                        .sortOrder(1) // 기본 정렬 순서
+                        .build())
+                    .collect(Collectors.toList());
+
+                reviewImageRepository.saveAll(reviewImages);
+            }
+
+            // 4. DTO 변환
+            StoreReviewsResponse.Review response = StoreReviewsResponse.Review.builder()
+                .id(savedReview.getId())
+                .userNickname(savedReview.getUserNickname())
+                .rating(savedReview.getRating().doubleValue())
+                .content(savedReview.getContent())
+                .build();
+
+            log.debug("리뷰 작성 완료 - reviewId: {}", savedReview.getId());
+            return response;
+
+        } catch (StoreNotFoundException e) {
+            throw e; // 재던짐 (Controller에서 적절한 HTTP 상태 코드 처리)
+        } catch (Exception e) {
+            log.error("리뷰 작성 중 예상치 못한 오류 - storeId: {}", request.storeId(), e);
+            throw new StoreReviewServiceException("리뷰 작성 실패", e);
+        }
     }
 
     /**

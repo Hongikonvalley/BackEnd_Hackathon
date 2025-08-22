@@ -2,6 +2,7 @@ package com.example.kakao_login.controller;
 
 import com.example.kakao_login.common.ApiResponse;
 import com.example.kakao_login.dto.review.ReviewUpdateRequest;
+import com.example.kakao_login.dto.review.ReviewCreateRequest;
 import com.example.kakao_login.dto.review.StoreReviewsResponse;
 import com.example.kakao_login.exception.ReviewAccessDeniedException;
 import com.example.kakao_login.exception.ReviewNotFoundException;
@@ -48,6 +49,34 @@ public class StoreReviewController {
             log.error("매장 리뷰 조회 실패 - storeId: {}", storeId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.fail("매장 리뷰 조회 중 오류가 발생했습니다.", 500));
+        }
+    }
+
+    /**
+     * 리뷰 작성
+     * @param userId 사용자 ID (실제로는 인증 토큰에서 추출)
+     * @param request 리뷰 작성 요청 데이터
+     * @return 작성된 리뷰 응답
+     */
+    @PostMapping("/reviews")
+    public ResponseEntity<ApiResponse<StoreReviewsResponse.Review>> createReview(
+            @RequestParam String userId, // 실제로는 인증 토큰에서 추출
+            @RequestBody ReviewCreateRequest request) {
+        log.debug("리뷰 작성 요청 - userId: {}, storeId: {}", userId, request.storeId());
+
+        try {
+            StoreReviewsResponse.Review response = storeReviewService.createReview(userId, request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
+
+        } catch (StoreNotFoundException e) {
+            log.warn("매장을 찾을 수 없음 - storeId: {}", request.storeId());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.fail("매장을 찾을 수 없습니다.", 404));
+
+        } catch (StoreReviewServiceException e) {
+            log.error("리뷰 작성 실패 - storeId: {}", request.storeId(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.fail("리뷰 작성 중 오류가 발생했습니다.", 500));
         }
     }
 
