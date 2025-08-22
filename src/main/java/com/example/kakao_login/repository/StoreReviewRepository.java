@@ -30,4 +30,10 @@ public interface StoreReviewRepository extends JpaRepository<StoreReview, String
      * 특정 매장의 리뷰 개수 조회
      */
     long countByStoreId(String storeId);
+
+    /**
+     * 매장의 모든 리뷰 삭제
+     * @param storeId 매장 ID
+     */
+    void deleteByStoreId(String storeId);
 }
