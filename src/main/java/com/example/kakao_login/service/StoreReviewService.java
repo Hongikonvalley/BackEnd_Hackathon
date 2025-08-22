@@ -29,7 +29,7 @@ public class StoreReviewService {
     private final StoreReviewRepository storeReviewRepository;
     private final ReviewImageRepository reviewImageRepository;
 
-    private static final int MAX_TAGS = 5;
+
 
     /**
      * 매장 리뷰 조회
@@ -53,7 +53,6 @@ public class StoreReviewService {
             }
 
             // 3. 리뷰 데이터 분석
-            List<String> visitorTags = extractVisitorTags(allReviews);
             StoreReviewsResponse.AiSummary aiSummary = createAiSummary(allReviews);
 
             // 4. 포토 리뷰와 일반 리뷰 분리
@@ -61,7 +60,6 @@ public class StoreReviewService {
             List<StoreReviewsResponse.Review> reviews = createReviews(allReviews);
 
             StoreReviewsResponse response = StoreReviewsResponse.builder()
-                .visitorTags(visitorTags)
                 .aiSummary(aiSummary)
                 .photos(photoUrls)
                 .reviews(reviews)
@@ -95,7 +93,6 @@ public class StoreReviewService {
      */
     private StoreReviewsResponse createEmptyResponse() {
         return StoreReviewsResponse.builder()
-            .visitorTags(Collections.emptyList())
             .aiSummary(StoreReviewsResponse.AiSummary.builder()
                 .content("아직 리뷰가 없습니다.")
                 .build())
@@ -104,36 +101,7 @@ public class StoreReviewService {
             .build();
     }
 
-    /**
-     * 방문자 TMI 태그 추출 (최대 5개)
-     * TODO: 실제로는 NLP 분석
-     */
-    private List<String> extractVisitorTags(List<StoreReview> reviews) {
-        // 간단한 키워드 기반 태그 추출 (실제 구현시 NLP/ML 활용)
-        Map<String, Integer> tagCount = new HashMap<>();
-        
-        String[] commonTags = {
-            "맛있는", "친절한", "깨끗한", "조용한", "분위기 좋은",
-            "가성비 좋은", "넓은", "아늑한", "신선한", "빠른 서비스"
-        };
 
-        for (StoreReview review : reviews) {
-            if (review.getContent() != null) {
-                String content = review.getContent();
-                for (String tag : commonTags) {
-                    if (content.contains(tag)) {
-                        tagCount.merge(tag, 1, Integer::sum);
-                    }
-                }
-            }
-        }
-
-        return tagCount.entrySet().stream()
-            .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
-            .limit(MAX_TAGS)
-            .map(Map.Entry::getKey)
-            .collect(Collectors.toList());
-    }
 
     /**
      * AI 리뷰 요약 생성

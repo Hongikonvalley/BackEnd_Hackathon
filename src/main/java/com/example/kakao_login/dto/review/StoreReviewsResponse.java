@@ -14,9 +14,6 @@ import java.util.List;
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record StoreReviewsResponse(
-    @JsonProperty("visitor_tags")
-    List<String> visitorTags, // 방문자 TMI 태그 (최대 5개)
-
     @JsonProperty("ai_summary")
     AiSummary aiSummary, // AI 리뷰 요약
 

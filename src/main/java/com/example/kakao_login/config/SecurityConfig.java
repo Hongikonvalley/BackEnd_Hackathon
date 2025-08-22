@@ -59,8 +59,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/stores/*/favorite").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/stores/*/favorite").permitAll()
 
-                        // 테스트 엔드포인트 허용
-                        .requestMatchers("/api/v1/test/**").permitAll()
+                        // 테스트 엔드포인트 허용 (GET, POST 모두)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/test/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/test/**").permitAll()
 
                         // 그 외는 인증 필요 (여기에 /api/auth/me 포함)
                         .anyRequest().authenticated()
