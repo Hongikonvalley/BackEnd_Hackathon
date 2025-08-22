@@ -200,7 +200,10 @@ public class StoreReviewService {
         log.debug("리뷰 작성 시작 - storeId: {}, userId: {}", request.storeId(), userId);
 
         try {
-            // 1. 매장 존재 여부 확인
+            // 1. 입력값 유효성 검사
+            request.validate();
+            
+            // 2. 매장 존재 여부 확인
             validateStoreExists(request.storeId());
 
             // 2. 리뷰 엔티티 생성

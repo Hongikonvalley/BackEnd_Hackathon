@@ -73,6 +73,10 @@ public class StoreReviewController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.fail("매장을 찾을 수 없습니다.", 404));
 
+        } catch (IllegalArgumentException e) {
+            log.warn("잘못된 입력값 - storeId: {}, message: {}", request.storeId(), e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.fail(e.getMessage(), 400));
         } catch (StoreReviewServiceException e) {
             log.error("리뷰 작성 실패 - storeId: {}", request.storeId(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

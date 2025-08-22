@@ -26,6 +26,14 @@ public record ReviewCreateRequest(
     List<String> imageUrls // 이미지 URL 리스트 (선택사항)
 ) {
     public ReviewCreateRequest {
+        // 유효성 검사는 별도 메서드로 분리
+    }
+
+    /**
+     * 유효성 검사
+     * @throws IllegalArgumentException 유효하지 않은 경우
+     */
+    public void validate() {
         if (storeId == null || storeId.trim().isEmpty()) {
             throw new IllegalArgumentException("매장 ID는 필수입니다.");
         }
