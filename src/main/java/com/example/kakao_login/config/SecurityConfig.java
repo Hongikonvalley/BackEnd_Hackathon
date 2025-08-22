@@ -58,6 +58,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/search/**", "/api/v1/stores/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/stores/*/favorite").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/stores/*/favorite").permitAll()
+                        
+                        // 리뷰 CRUD API 허용
+                        .requestMatchers(HttpMethod.POST, "/api/v1/stores/reviews/**").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/stores/reviews/**").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/stores/reviews/**").permitAll()
+
+                        // 테스트 엔드포인트 허용 (GET, POST 모두)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/test/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/test/**").permitAll()
 
                         // 그 외는 인증 필요 (여기에 /api/auth/me 포함)
                         .anyRequest().authenticated()

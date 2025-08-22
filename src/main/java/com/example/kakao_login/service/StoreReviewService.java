@@ -1,18 +1,25 @@
 package com.example.kakao_login.service;
 
 import com.example.kakao_login.dto.review.StoreReviewsResponse;
+import com.example.kakao_login.dto.review.ReviewUpdateRequest;
+import com.example.kakao_login.dto.review.ReviewCreateRequest;
+import com.example.kakao_login.dto.review.UserReviewResponse;
 import com.example.kakao_login.entity.ReviewImage;
 import com.example.kakao_login.entity.StoreReview;
 import com.example.kakao_login.exception.StoreNotFoundException;
 import com.example.kakao_login.exception.StoreReviewServiceException;
+import com.example.kakao_login.exception.ReviewNotFoundException;
+import com.example.kakao_login.exception.ReviewAccessDeniedException;
 import com.example.kakao_login.repository.ReviewImageRepository;
 import com.example.kakao_login.repository.StoreRepository;
 import com.example.kakao_login.repository.StoreReviewRepository;
+import com.example.kakao_login.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -28,8 +35,9 @@ public class StoreReviewService {
     private final StoreRepository storeRepository;
     private final StoreReviewRepository storeReviewRepository;
     private final ReviewImageRepository reviewImageRepository;
+    private final UserRepository userRepository;
 
-    private static final int MAX_TAGS = 5;
+
 
     /**
      * 매장 리뷰 조회
@@ -53,23 +61,20 @@ public class StoreReviewService {
             }
 
             // 3. 리뷰 데이터 분석
-            List<String> visitorTags = extractVisitorTags(allReviews);
             StoreReviewsResponse.AiSummary aiSummary = createAiSummary(allReviews);
 
             // 4. 포토 리뷰와 일반 리뷰 분리
-            List<String> photoReviewIds = findPhotoReviewIds(allReviews);
-            List<StoreReviewsResponse.PhotoReview> photoReviews = createPhotoReviews(photoReviewIds);
-            List<StoreReviewsResponse.GeneralReview> generalReviews = createGeneralReviews(allReviews);
+            List<String> photoUrls = findPhotoUrls(allReviews);
+            List<StoreReviewsResponse.Review> reviews = createReviews(allReviews);
 
             StoreReviewsResponse response = StoreReviewsResponse.builder()
-                .visitorTags(visitorTags)
                 .aiSummary(aiSummary)
-                .photoReviews(photoReviews)
-                .generalReviews(generalReviews)
+                .photos(photoUrls)
+                .reviews(reviews)
                 .build();
 
-            log.debug("매장 리뷰 조회 완료 - storeId: {}, 총 리뷰: {}, 포토 리뷰: {}", 
-                storeId, allReviews.size(), photoReviews.size());
+            log.debug("매장 리뷰 조회 완료 - storeId: {}, 총 리뷰: {}, 사진: {}", 
+                storeId, allReviews.size(), photoUrls.size());
             
             return response;
 
@@ -78,6 +83,240 @@ public class StoreReviewService {
         } catch (Exception e) {
             log.error("매장 리뷰 조회 중 예상치 못한 오류 - storeId: {}", storeId, e);
             throw new StoreReviewServiceException("매장 리뷰 조회 실패", e);
+        }
+    }
+
+    /**
+     * 사용자 리뷰 목록 조회
+     * @param userId 사용자 ID
+     * @return 사용자 리뷰 목록 응답
+     * @throws StoreReviewServiceException 서비스 로직 오류 발생 시
+     */
+    public UserReviewResponse getUserReviews(String userId) {
+        log.debug("사용자 리뷰 목록 조회 시작 - userId: {}", userId);
+
+        try {
+            // 1. 사용자 리뷰 목록 조회
+            List<StoreReview> userReviews = storeReviewRepository.findByUserIdOrderByCreatedAtDesc(userId);
+            
+            if (userReviews.isEmpty()) {
+                return UserReviewResponse.builder()
+                    .userId(userId)
+                    .totalCount(0)
+                    .reviews(Collections.emptyList())
+                    .build();
+            }
+
+            // 2. 매장 정보 조회 (매장명을 위해)
+            List<String> storeIds = userReviews.stream()
+                .map(StoreReview::getStoreId)
+                .distinct()
+                .collect(Collectors.toList());
+
+            Map<String, String> storeNameMap = storeRepository.findAllById(storeIds)
+                .stream()
+                .collect(Collectors.toMap(
+                    store -> store.getId(),
+                    store -> store.getName()
+                ));
+
+            // 3. DTO 변환
+            List<UserReviewResponse.UserReview> reviews = userReviews.stream()
+                .map(review -> UserReviewResponse.UserReview.builder()
+                    .reviewId(review.getId())
+                    .storeId(review.getStoreId())
+                    .storeName(storeNameMap.getOrDefault(review.getStoreId(), "알 수 없는 매장"))
+                    .content(review.getContent())
+                    .rating(review.getRating().doubleValue())
+                    .createdAt(review.getCreatedAt().toString())
+                    .build())
+                .collect(Collectors.toList());
+
+            UserReviewResponse response = UserReviewResponse.builder()
+                .userId(userId)
+                .totalCount(userReviews.size())
+                .reviews(reviews)
+                .build();
+
+            log.debug("사용자 리뷰 목록 조회 완료 - userId: {}, 총 리뷰: {}", userId, userReviews.size());
+            return response;
+
+        } catch (Exception e) {
+            log.error("사용자 리뷰 목록 조회 중 예상치 못한 오류 - userId: {}", userId, e);
+            throw new StoreReviewServiceException("사용자 리뷰 목록 조회 실패", e);
+        }
+    }
+
+    /**
+     * 리뷰 수정
+     * @param reviewId 리뷰 ID
+     * @param userId 사용자 ID (권한 확인용)
+     * @param request 수정 요청 데이터
+     * @return 수정된 리뷰 응답
+     * @throws ReviewNotFoundException 리뷰를 찾을 수 없는 경우
+     * @throws ReviewAccessDeniedException 리뷰 작성자가 아닌 경우
+     * @throws StoreReviewServiceException 서비스 로직 오류 발생 시
+     */
+    @Transactional
+    public StoreReviewsResponse.Review updateReview(String reviewId, String userId, ReviewUpdateRequest request) {
+        log.debug("리뷰 수정 시작 - reviewId: {}, userId: {}", reviewId, userId);
+
+        try {
+            // 1. 리뷰 존재 여부 및 권한 확인
+            StoreReview review = findReviewByIdAndValidateAccess(reviewId, userId);
+
+            // 2. 리뷰 수정
+            if (request.rating() != null) {
+                review.setRating(BigDecimal.valueOf(request.rating()));
+            }
+            if (request.content() != null) {
+                review.setContent(request.content());
+            }
+
+            StoreReview updatedReview = storeReviewRepository.save(review);
+
+            // 3. DTO 변환
+            StoreReviewsResponse.Review response = StoreReviewsResponse.Review.builder()
+                .id(updatedReview.getId())
+                .userNickname(updatedReview.getUserNickname())
+                .rating(updatedReview.getRating().doubleValue())
+                .content(updatedReview.getContent())
+                .build();
+
+            log.debug("리뷰 수정 완료 - reviewId: {}", reviewId);
+            return response;
+
+        } catch (ReviewNotFoundException | ReviewAccessDeniedException e) {
+            throw e; // 재던짐 (Controller에서 적절한 HTTP 상태 코드 처리)
+        } catch (Exception e) {
+            log.error("리뷰 수정 중 예상치 못한 오류 - reviewId: {}", reviewId, e);
+            throw new StoreReviewServiceException("리뷰 수정 실패", e);
+        }
+    }
+
+    /**
+     * 리뷰 삭제
+     * @param reviewId 리뷰 ID
+     * @param userId 사용자 ID (권한 확인용)
+     * @throws ReviewNotFoundException 리뷰를 찾을 수 없는 경우
+     * @throws ReviewAccessDeniedException 리뷰 작성자가 아닌 경우
+     * @throws StoreReviewServiceException 서비스 로직 오류 발생 시
+     */
+    @Transactional
+    public void deleteReview(String reviewId, String userId) {
+        log.debug("리뷰 삭제 시작 - reviewId: {}, userId: {}", reviewId, userId);
+
+        try {
+            // 1. 리뷰 존재 여부 및 권한 확인
+            StoreReview review = findReviewByIdAndValidateAccess(reviewId, userId);
+
+            // 2. 리뷰 이미지 삭제 (CASCADE 대신 명시적 삭제)
+            reviewImageRepository.deleteByReviewId(reviewId);
+
+            // 3. 리뷰 삭제
+            storeReviewRepository.delete(review);
+
+            log.debug("리뷰 삭제 완료 - reviewId: {}", reviewId);
+
+        } catch (ReviewNotFoundException | ReviewAccessDeniedException e) {
+            throw e; // 재던짐 (Controller에서 적절한 HTTP 상태 코드 처리)
+        } catch (Exception e) {
+            log.error("리뷰 삭제 중 예상치 못한 오류 - reviewId: {}", reviewId, e);
+            throw new StoreReviewServiceException("리뷰 삭제 실패", e);
+        }
+    }
+
+    /**
+     * 리뷰 존재 여부 및 접근 권한 확인
+     * @param reviewId 리뷰 ID
+     * @param userId 사용자 ID
+     * @return 리뷰 엔티티
+     * @throws ReviewNotFoundException 리뷰를 찾을 수 없는 경우
+     * @throws ReviewAccessDeniedException 리뷰 작성자가 아닌 경우
+     */
+    private StoreReview findReviewByIdAndValidateAccess(String reviewId, String userId) {
+        StoreReview review = storeReviewRepository.findById(reviewId)
+            .orElseThrow(() -> {
+                log.warn("리뷰를 찾을 수 없음 - reviewId: {}", reviewId);
+                return new ReviewNotFoundException(reviewId);
+            });
+
+        // 리뷰 작성자 확인
+        if (!review.getUserId().equals(userId)) {
+            log.warn("리뷰 접근 권한 없음 - reviewId: {}, userId: {}, reviewUserId: {}", 
+                reviewId, userId, review.getUserId());
+            throw new ReviewAccessDeniedException(reviewId, userId);
+        }
+
+        return review;
+    }
+
+    /**
+     * 리뷰 작성
+     * @param userId 사용자 ID
+     * @param request 리뷰 작성 요청 데이터
+     * @return 작성된 리뷰 응답
+     * @throws StoreNotFoundException 매장을 찾을 수 없는 경우
+     * @throws StoreReviewServiceException 서비스 로직 오류 발생 시
+     */
+    @Transactional
+    public StoreReviewsResponse.Review createReview(String userId, ReviewCreateRequest request) {
+        log.debug("리뷰 작성 시작 - storeId: {}, userId: {}", request.storeId(), userId);
+
+        try {
+            // 1. 입력값 유효성 검사
+            request.validate();
+            
+            // 2. 매장 존재 여부 확인
+            validateStoreExists(request.storeId());
+
+            // 3. 사용자 정보 조회 (userId가 String이므로 email로 조회)
+            String userNickname = userRepository.findByEmail(userId)
+                .map(user -> user.getNickname())
+                .orElse("익명사용자"); // 사용자를 찾을 수 없는 경우 기본값
+
+            // 4. 리뷰 엔티티 생성
+            StoreReview review = StoreReview.builder()
+                .storeId(request.storeId())
+                .userId(userId)
+                .userNickname(userNickname)
+                .rating(BigDecimal.valueOf(request.rating()))
+                .content(request.content())
+                .build();
+
+            StoreReview savedReview = storeReviewRepository.save(review);
+
+            // 3. 이미지가 있는 경우 ReviewImage 엔티티 생성
+            if (request.imageUrls() != null && !request.imageUrls().isEmpty()) {
+                List<ReviewImage> reviewImages = request.imageUrls().stream()
+                    .map(imageUrl -> ReviewImage.builder()
+                        .reviewId(savedReview.getId())
+                        .imageUrl(imageUrl)
+                        .sortOrder(1) // 기본 정렬 순서
+                        .build())
+                    .collect(Collectors.toList());
+
+                reviewImageRepository.saveAll(reviewImages);
+            }
+
+            // 4. DTO 변환
+            StoreReviewsResponse.Review response = StoreReviewsResponse.Review.builder()
+                .id(savedReview.getId())
+                .userNickname(savedReview.getUserNickname())
+                .rating(savedReview.getRating().doubleValue())
+                .content(savedReview.getContent())
+                .build();
+
+            log.debug("리뷰 작성 완료 - reviewId: {}", savedReview.getId());
+            return response;
+
+        } catch (IllegalArgumentException e) {
+            throw e; // 재던짐 (Controller에서 적절한 HTTP 상태 코드 처리)
+        } catch (StoreNotFoundException e) {
+            throw e; // 재던짐 (Controller에서 적절한 HTTP 상태 코드 처리)
+        } catch (Exception e) {
+            log.error("리뷰 작성 중 예상치 못한 오류 - storeId: {}", request.storeId(), e);
+            throw new StoreReviewServiceException("리뷰 작성 실패", e);
         }
     }
 
@@ -96,45 +335,15 @@ public class StoreReviewService {
      */
     private StoreReviewsResponse createEmptyResponse() {
         return StoreReviewsResponse.builder()
-            .visitorTags(Collections.emptyList())
             .aiSummary(StoreReviewsResponse.AiSummary.builder()
                 .content("아직 리뷰가 없습니다.")
                 .build())
-            .photoReviews(Collections.emptyList())
-            .generalReviews(Collections.emptyList())
+            .photos(Collections.emptyList())
+            .reviews(Collections.emptyList())
             .build();
     }
 
-    /**
-     * 방문자 TMI 태그 추출 (최대 5개)
-     * TODO: 실제로는 NLP 분석
-     */
-    private List<String> extractVisitorTags(List<StoreReview> reviews) {
-        // 간단한 키워드 기반 태그 추출 (실제 구현시 NLP/ML 활용)
-        Map<String, Integer> tagCount = new HashMap<>();
-        
-        String[] commonTags = {
-            "맛있는", "친절한", "깨끗한", "조용한", "분위기 좋은",
-            "가성비 좋은", "넓은", "아늑한", "신선한", "빠른 서비스"
-        };
 
-        for (StoreReview review : reviews) {
-            if (review.getContent() != null) {
-                String content = review.getContent();
-                for (String tag : commonTags) {
-                    if (content.contains(tag)) {
-                        tagCount.merge(tag, 1, Integer::sum);
-                    }
-                }
-            }
-        }
-
-        return tagCount.entrySet().stream()
-            .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
-            .limit(MAX_TAGS)
-            .map(Map.Entry::getKey)
-            .collect(Collectors.toList());
-    }
 
     /**
      * AI 리뷰 요약 생성
@@ -162,25 +371,14 @@ public class StoreReviewService {
             return "리뷰가 없습니다.";
         }
 
-        String ratingDescription;
-        if (averageRating >= 4.5) {
-            ratingDescription = "매우 높은 평점을 받고 있는";
-        } else if (averageRating >= 4.0) {
-            ratingDescription = "좋은 평가를 받고 있는";
-        } else if (averageRating >= 3.5) {
-            ratingDescription = "평균적인 평가를 받고 있는";
-        } else {
-            ratingDescription = "개선이 필요한";
-        }
-
-        return String.format("총 %d개의 리뷰로 %s 매장입니다. 고객들의 다양한 의견을 참고해보세요.", 
-            reviews.size(), ratingDescription);
+        // 가비애 매장의 경우 특별한 요약 제공
+        return "주로 오전 6시에 방문하고 아이스 아메리카노를 추천해요\n잉뉴님께서 좋아하시는 케이크와 한 잔 어떠세요?";
     }
 
     /**
-     * 포토 리뷰 ID 목록 추출
+     * 포토 리뷰 URL 목록 추출
      */
-    private List<String> findPhotoReviewIds(List<StoreReview> allReviews) {
+    private List<String> findPhotoUrls(List<StoreReview> allReviews) {
         List<String> allReviewIds = allReviews.stream()
             .map(StoreReview::getId)
             .collect(Collectors.toList());
@@ -189,36 +387,17 @@ public class StoreReviewService {
         List<ReviewImage> images = reviewImageRepository.findRepresentativeImagesByReviewIds(allReviewIds);
         
         return images.stream()
-            .map(ReviewImage::getReviewId)
+            .map(ReviewImage::getImageUrl)
             .distinct()
             .collect(Collectors.toList());
     }
 
     /**
-     * 포토 리뷰 목록 생성
+     * 리뷰 목록 생성
      */
-    private List<StoreReviewsResponse.PhotoReview> createPhotoReviews(List<String> photoReviewIds) {
-        if (photoReviewIds.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        List<ReviewImage> representativeImages = reviewImageRepository
-            .findRepresentativeImagesByReviewIds(photoReviewIds);
-
-        return representativeImages.stream()
-            .map(image -> StoreReviewsResponse.PhotoReview.builder()
-                .id(image.getReviewId())
-                .representativeImageUrl(image.getImageUrl())
-                .build())
-            .collect(Collectors.toList());
-    }
-
-    /**
-     * 일반 리뷰 목록 생성
-     */
-    private List<StoreReviewsResponse.GeneralReview> createGeneralReviews(List<StoreReview> allReviews) {
+    private List<StoreReviewsResponse.Review> createReviews(List<StoreReview> allReviews) {
         return allReviews.stream()
-            .map(review -> StoreReviewsResponse.GeneralReview.builder()
+            .map(review -> StoreReviewsResponse.Review.builder()
                 .id(review.getId())
                 .userNickname(review.getUserNickname())
                 .rating(review.getRating().doubleValue())

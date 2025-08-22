@@ -45,4 +45,17 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, String> {
         ORDER BY m.storeId, m.sortOrder
         """)
     List<MenuItem> findFirstMenuByStoreIds(@Param("storeIds") List<String> storeIds);
+
+    /**
+     * 매장의 메뉴 개수 조회
+     * @param storeId 매장 ID
+     * @return 메뉴 개수
+     */
+    long countByStoreId(String storeId);
+
+    /**
+     * 매장의 모든 메뉴 삭제
+     * @param storeId 매장 ID
+     */
+    void deleteByStoreId(String storeId);
 }

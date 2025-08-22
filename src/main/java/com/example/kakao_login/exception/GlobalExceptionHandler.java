@@ -10,6 +10,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import java.lang.IllegalArgumentException;
 
 /**
  * 전역 예외 처리 핸들러
@@ -97,6 +98,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
             .body(ErrorResponse.badRequest("입력값이 올바르지 않습니다.", request.getRequestURI()));
+    }
+
+    /**
+     * 잘못된 인수 예외 처리 (400)
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<?> handleIllegalArgumentException(
+        IllegalArgumentException e, 
+        HttpServletRequest request
+    ) {
+        log.warn("잘못된 인수 - path: {}, message: {}", 
+            request.getRequestURI(), e.getMessage());
+            
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(ErrorResponse.badRequest(e.getMessage(), request.getRequestURI()));
     }
 
     /**
