@@ -20,11 +20,11 @@ public record StoreReviewsResponse(
     @JsonProperty("ai_summary")
     AiSummary aiSummary, // AI 리뷰 요약
 
-    @JsonProperty("photo_reviews")
-    List<PhotoReview> photoReviews, // 포토 리뷰 목록 (이미지와 ID만)
+    @JsonProperty("photos")
+    List<String> photos, // 사진 URL 리스트 (ID 없이)
 
-    @JsonProperty("general_reviews")
-    List<GeneralReview> generalReviews // 일반 리뷰 목록
+    @JsonProperty("reviews")
+    List<Review> reviews // 리뷰 목록
 ) {
     /**
      * AI 리뷰 요약 DTO
@@ -35,32 +35,22 @@ public record StoreReviewsResponse(
     ) {}
 
     /**
-     * 일반 리뷰 DTO
+     * 리뷰 DTO
      */
     @Builder
-    public record GeneralReview(
+    public record Review(
         String id, // 리뷰 ID
         @JsonProperty("user_nickname")
         String userNickname, // 작성자 닉네임
         Double rating, // 평점 (1.0-5.0)
         String content // 리뷰 내용
     ) {
-        public GeneralReview {
+        public Review {
             if (rating != null && (rating < 1.0 || rating > 5.0)) {
                 throw new IllegalArgumentException("Rating must be between 1.0 and 5.0: " + rating);
             }
         }
     }
-
-    /**
-     * 포토 리뷰 DTO (대표 이미지와 ID만)
-     */
-    @Builder
-    public record PhotoReview(
-        String id, // 리뷰 ID
-        @JsonProperty("representative_image_url")
-        String representativeImageUrl // 대표 이미지 URL (첫 번째 이미지)
-    ) {}
 
     /**
      * 성공 응답 생성 헬퍼 메서드

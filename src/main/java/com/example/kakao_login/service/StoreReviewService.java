@@ -57,19 +57,18 @@ public class StoreReviewService {
             StoreReviewsResponse.AiSummary aiSummary = createAiSummary(allReviews);
 
             // 4. 포토 리뷰와 일반 리뷰 분리
-            List<String> photoReviewIds = findPhotoReviewIds(allReviews);
-            List<StoreReviewsResponse.PhotoReview> photoReviews = createPhotoReviews(photoReviewIds);
-            List<StoreReviewsResponse.GeneralReview> generalReviews = createGeneralReviews(allReviews);
+            List<String> photoUrls = findPhotoUrls(allReviews);
+            List<StoreReviewsResponse.Review> reviews = createReviews(allReviews);
 
             StoreReviewsResponse response = StoreReviewsResponse.builder()
                 .visitorTags(visitorTags)
                 .aiSummary(aiSummary)
-                .photoReviews(photoReviews)
-                .generalReviews(generalReviews)
+                .photos(photoUrls)
+                .reviews(reviews)
                 .build();
 
-            log.debug("매장 리뷰 조회 완료 - storeId: {}, 총 리뷰: {}, 포토 리뷰: {}", 
-                storeId, allReviews.size(), photoReviews.size());
+            log.debug("매장 리뷰 조회 완료 - storeId: {}, 총 리뷰: {}, 사진: {}", 
+                storeId, allReviews.size(), photoUrls.size());
             
             return response;
 
@@ -100,8 +99,8 @@ public class StoreReviewService {
             .aiSummary(StoreReviewsResponse.AiSummary.builder()
                 .content("아직 리뷰가 없습니다.")
                 .build())
-            .photoReviews(Collections.emptyList())
-            .generalReviews(Collections.emptyList())
+            .photos(Collections.emptyList())
+            .reviews(Collections.emptyList())
             .build();
     }
 
@@ -178,9 +177,9 @@ public class StoreReviewService {
     }
 
     /**
-     * 포토 리뷰 ID 목록 추출
+     * 포토 리뷰 URL 목록 추출
      */
-    private List<String> findPhotoReviewIds(List<StoreReview> allReviews) {
+    private List<String> findPhotoUrls(List<StoreReview> allReviews) {
         List<String> allReviewIds = allReviews.stream()
             .map(StoreReview::getId)
             .collect(Collectors.toList());
@@ -189,36 +188,17 @@ public class StoreReviewService {
         List<ReviewImage> images = reviewImageRepository.findRepresentativeImagesByReviewIds(allReviewIds);
         
         return images.stream()
-            .map(ReviewImage::getReviewId)
+            .map(ReviewImage::getImageUrl)
             .distinct()
             .collect(Collectors.toList());
     }
 
     /**
-     * 포토 리뷰 목록 생성
+     * 리뷰 목록 생성
      */
-    private List<StoreReviewsResponse.PhotoReview> createPhotoReviews(List<String> photoReviewIds) {
-        if (photoReviewIds.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        List<ReviewImage> representativeImages = reviewImageRepository
-            .findRepresentativeImagesByReviewIds(photoReviewIds);
-
-        return representativeImages.stream()
-            .map(image -> StoreReviewsResponse.PhotoReview.builder()
-                .id(image.getReviewId())
-                .representativeImageUrl(image.getImageUrl())
-                .build())
-            .collect(Collectors.toList());
-    }
-
-    /**
-     * 일반 리뷰 목록 생성
-     */
-    private List<StoreReviewsResponse.GeneralReview> createGeneralReviews(List<StoreReview> allReviews) {
+    private List<StoreReviewsResponse.Review> createReviews(List<StoreReview> allReviews) {
         return allReviews.stream()
-            .map(review -> StoreReviewsResponse.GeneralReview.builder()
+            .map(review -> StoreReviewsResponse.Review.builder()
                 .id(review.getId())
                 .userNickname(review.getUserNickname())
                 .rating(review.getRating().doubleValue())
