@@ -3,6 +3,7 @@ package com.example.kakao_login.service;
 import com.example.kakao_login.dto.review.StoreReviewsResponse;
 import com.example.kakao_login.dto.review.ReviewUpdateRequest;
 import com.example.kakao_login.dto.review.ReviewCreateRequest;
+import com.example.kakao_login.dto.review.UserReviewResponse;
 import com.example.kakao_login.entity.ReviewImage;
 import com.example.kakao_login.entity.StoreReview;
 import com.example.kakao_login.exception.StoreNotFoundException;
@@ -82,6 +83,67 @@ public class StoreReviewService {
         } catch (Exception e) {
             log.error("매장 리뷰 조회 중 예상치 못한 오류 - storeId: {}", storeId, e);
             throw new StoreReviewServiceException("매장 리뷰 조회 실패", e);
+        }
+    }
+
+    /**
+     * 사용자 리뷰 목록 조회
+     * @param userId 사용자 ID
+     * @return 사용자 리뷰 목록 응답
+     * @throws StoreReviewServiceException 서비스 로직 오류 발생 시
+     */
+    public UserReviewResponse getUserReviews(String userId) {
+        log.debug("사용자 리뷰 목록 조회 시작 - userId: {}", userId);
+
+        try {
+            // 1. 사용자 리뷰 목록 조회
+            List<StoreReview> userReviews = storeReviewRepository.findByUserIdOrderByCreatedAtDesc(userId);
+            
+            if (userReviews.isEmpty()) {
+                return UserReviewResponse.builder()
+                    .userId(userId)
+                    .totalCount(0)
+                    .reviews(Collections.emptyList())
+                    .build();
+            }
+
+            // 2. 매장 정보 조회 (매장명을 위해)
+            List<String> storeIds = userReviews.stream()
+                .map(StoreReview::getStoreId)
+                .distinct()
+                .collect(Collectors.toList());
+
+            Map<String, String> storeNameMap = storeRepository.findAllById(storeIds)
+                .stream()
+                .collect(Collectors.toMap(
+                    store -> store.getId(),
+                    store -> store.getName()
+                ));
+
+            // 3. DTO 변환
+            List<UserReviewResponse.UserReview> reviews = userReviews.stream()
+                .map(review -> UserReviewResponse.UserReview.builder()
+                    .reviewId(review.getId())
+                    .storeId(review.getStoreId())
+                    .storeName(storeNameMap.getOrDefault(review.getStoreId(), "알 수 없는 매장"))
+                    .content(review.getContent())
+                    .rating(review.getRating().doubleValue())
+                    .createdAt(review.getCreatedAt().toString())
+                    .build())
+                .collect(Collectors.toList());
+
+            UserReviewResponse response = UserReviewResponse.builder()
+                .userId(userId)
+                .totalCount(userReviews.size())
+                .reviews(reviews)
+                .build();
+
+            log.debug("사용자 리뷰 목록 조회 완료 - userId: {}, 총 리뷰: {}", userId, userReviews.size());
+            return response;
+
+        } catch (Exception e) {
+            log.error("사용자 리뷰 목록 조회 중 예상치 못한 오류 - userId: {}", userId, e);
+            throw new StoreReviewServiceException("사용자 리뷰 목록 조회 실패", e);
         }
     }
 
@@ -208,8 +270,8 @@ public class StoreReviewService {
             // 2. 매장 존재 여부 확인
             validateStoreExists(request.storeId());
 
-            // 3. 사용자 정보 조회
-            String userNickname = userRepository.findById(userId)
+            // 3. 사용자 정보 조회 (userId가 String이므로 email로 조회)
+            String userNickname = userRepository.findByEmail(userId)
                 .map(user -> user.getNickname())
                 .orElse("익명사용자"); // 사용자를 찾을 수 없는 경우 기본값
 

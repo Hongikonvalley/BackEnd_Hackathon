@@ -36,4 +36,20 @@ public interface StoreReviewRepository extends JpaRepository<StoreReview, String
      * @param storeId 매장 ID
      */
     void deleteByStoreId(String storeId);
+
+    /**
+     * 특정 사용자의 리뷰 목록 조회 (최신순)
+     */
+    @Query("""
+        SELECT sr FROM StoreReview sr 
+        WHERE sr.userId = :userId 
+        AND sr.isActive = true 
+        ORDER BY sr.createdAt DESC
+    """)
+    List<StoreReview> findByUserIdOrderByCreatedAtDesc(@Param("userId") String userId);
+
+    /**
+     * 특정 사용자의 리뷰 개수 조회
+     */
+    long countByUserId(String userId);
 }

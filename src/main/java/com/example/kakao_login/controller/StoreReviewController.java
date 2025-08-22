@@ -4,6 +4,7 @@ import com.example.kakao_login.common.ApiResponse;
 import com.example.kakao_login.dto.review.ReviewUpdateRequest;
 import com.example.kakao_login.dto.review.ReviewCreateRequest;
 import com.example.kakao_login.dto.review.StoreReviewsResponse;
+import com.example.kakao_login.dto.review.UserReviewResponse;
 import com.example.kakao_login.exception.ReviewAccessDeniedException;
 import com.example.kakao_login.exception.ReviewNotFoundException;
 import com.example.kakao_login.exception.StoreNotFoundException;
@@ -49,6 +50,26 @@ public class StoreReviewController {
             log.error("매장 리뷰 조회 실패 - storeId: {}", storeId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.fail("매장 리뷰 조회 중 오류가 발생했습니다.", 500));
+        }
+    }
+
+    /**
+     * 사용자 리뷰 목록 조회
+     * @param userId 사용자 ID
+     * @return 사용자 리뷰 목록 응답
+     */
+    @GetMapping("/reviews/my")
+    public ResponseEntity<ApiResponse<UserReviewResponse>> getMyReviews(@RequestParam String userId) {
+        log.debug("사용자 리뷰 목록 조회 요청 - userId: {}", userId);
+
+        try {
+            UserReviewResponse response = storeReviewService.getUserReviews(userId);
+            return ResponseEntity.ok(ApiResponse.success(response));
+
+        } catch (StoreReviewServiceException e) {
+            log.error("사용자 리뷰 목록 조회 실패 - userId: {}", userId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.fail("사용자 리뷰 목록 조회 중 오류가 발생했습니다.", 500));
         }
     }
 
