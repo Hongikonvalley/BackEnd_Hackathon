@@ -4,6 +4,7 @@ import com.example.kakao_login.common.ApiResponse;
 import com.example.kakao_login.repository.StoreRepository;
 import com.example.kakao_login.repository.StoreViewRepository;
 import com.example.kakao_login.repository.EarlybirdDealRepository;
+import com.example.kakao_login.service.UserPointService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,6 +24,7 @@ public class TestController {
     private final StoreRepository storeRepository;
     private final StoreViewRepository storeViewRepository;
     private final EarlybirdDealRepository earlybirdDealRepository;
+    private final UserPointService userPointService;
 
     @GetMapping("/stores")
     public ApiResponse<List<Map<String, Object>>> getStores() {
@@ -132,5 +134,28 @@ public class TestController {
         }
         
         return ApiResponse.success(result);
+    }
+
+    /**
+     * 포인트 테스트 API
+     */
+    @PostMapping("/points/earn")
+    public ApiResponse<String> earnPoints(@RequestParam String userId, @RequestParam int points) {
+        try {
+            userPointService.earnPoints(userId, points);
+            return ApiResponse.success("포인트 획득 완료: " + points + "포인트");
+        } catch (Exception e) {
+            return ApiResponse.fail("포인트 획득 실패: " + e.getMessage(), 500);
+        }
+    }
+
+    @PostMapping("/points/spend")
+    public ApiResponse<String> spendPoints(@RequestParam String userId, @RequestParam int points) {
+        try {
+            userPointService.spendPoints(userId, points);
+            return ApiResponse.success("포인트 차감 완료: " + points + "포인트");
+        } catch (Exception e) {
+            return ApiResponse.fail("포인트 차감 실패: " + e.getMessage(), 500);
+        }
     }
 }
