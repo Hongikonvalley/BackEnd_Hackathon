@@ -53,6 +53,9 @@ public class FavoriteResponse {
         @JsonProperty("store_image")
         String storeImage, // 매장 대표 이미지
         
+        @JsonProperty("business_status")
+        String businessStatus, // 영업 상태 (24시간 영업, 지금 영업중, n시 오픈 등)
+        
         @JsonProperty("deal_info")
         DealInfo dealInfo // 할인 정보
     ) {}

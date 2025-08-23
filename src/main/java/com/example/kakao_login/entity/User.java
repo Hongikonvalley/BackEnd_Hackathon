@@ -21,4 +21,6 @@ public class User {
     private String password;
 
     private String nickname; // 선택
+
+    private String profileImageUrl;
 }

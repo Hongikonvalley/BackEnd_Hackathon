@@ -71,6 +71,12 @@ public class Store extends BaseEntity {
     @Column(name = "business_status", nullable = false, length = 20)
     private BusinessStatus businessStatus; // 영업상태
 
+    @Column(name = "open_time", length = 10)
+    private String openTime; // 오픈 시간 (HH:mm 형식)
+
+    @Column(name = "close_time", length = 10)
+    private String closeTime; // 마감 시간 (HH:mm 형식)
+
 
 
     /**
