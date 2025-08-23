@@ -56,45 +56,44 @@ public class DataInitializer {
     }
 
     private void initUser() {
-        String email = "mutsa@mutsa.shop";
-        String rawPw = "mutsa1234!";
+            String email = "mutsa@mutsa.shop";
+            String rawPw = "mutsa1234!";
         userRepository.findByEmail(email).orElseGet(() -> userRepository.save(
-                User.builder()
-                        .email(email)
-                        .password(encoder.encode(rawPw))
-                        .nickname("잉뉴")
-                        .profileImageUrl("https://example.com/default-profile.png")
-                        .build()
-        ));
+                    User.builder()
+                            .email(email)
+                            .password(encoder.encode(rawPw))
+                            .nickname("잉뉴")
+                            .build()
+            ));
     }
 
     private void initGabiaeStore() {
-        // 기존 가비애 매장 찾기
-        storeRepository.findByName("가비애").ifPresentOrElse(
-            existingStore -> {
-                // 기존 매장이 있으면 외부 링크 정보만 업데이트
-                existingStore.setKakaoPlaceId("20809319");
-                existingStore.setNaverPlaceId("1071920016");
-                storeRepository.save(existingStore);
-            },
-            () -> {
-                // 매장이 없으면 새로 생성
-                Store store = Store.builder()
-                        .userId("user-001")
-                        .name("가비애")
-                        .address("서울특별시 와우산로 147-1")
-                        .latitude(BigDecimal.valueOf(37.5544229)) // 구글 지도에서 추출한 정확한 좌표
-                        .longitude(BigDecimal.valueOf(126.9295616))
-                        .phone("070-773-4007")
-                        .businessStatus(BusinessStatus.OPEN_24H) // 24시간 영업
-                        .aiRecommendation("24시간 영업하는 편리한 카페! 오전 시간 커피 무료 사이즈업 혜택을 놓치지 마세요.")
-                        .repImageUrl("https://github.com/user-attachments/assets/0bd68d92-7695-4dc6-aada-d518e369fcb1") // 대표 이미지
-                        .kakaoPlaceId("20809319")
-                        .naverPlaceId("1071920016")
-                        .build();
-                storeRepository.save(store);
-            }
-        );
+        // 기존 가비애 매장이 있으면 대표 이미지만 업데이트
+        Store existingStore = storeRepository.findByName("가비애").orElse(null);
+        if (existingStore != null) {
+            // 대표 이미지 URL 업데이트
+            existingStore.setRepImageUrl("https://github.com/user-attachments/assets/84d6b4aa-12e9-40de-92e4-f85a512275d6");
+            // AI 추천 내용 업데이트
+            existingStore.setAiRecommendation("주로 오전 6시에 방문하고 아이스 아메리카노를 추천해요 잉뉴님께서 좋아하시는 케이크와 한 잔 어떠세요?");
+            storeRepository.save(existingStore);
+            return;
+        }
+        
+        // 새로운 가비애 매장 생성 (기존 매장이 없는 경우)
+        Store store = Store.builder()
+                .userId("user-001")
+                .name("가비애")
+                .address("서울특별시 와우산로 147-1")
+                .latitude(BigDecimal.valueOf(37.5544229)) // 구글 지도에서 추출한 정확한 좌표
+                .longitude(BigDecimal.valueOf(126.9295616))
+                .phone("070-773-4007")
+                .businessStatus(BusinessStatus.OPEN_24H) // 24시간 영업
+                .aiRecommendation("주로 오전 6시에 방문하고 아이스 아메리카노를 추천해요 잉뉴님께서 좋아하시는 케이크와 한 잔 어떠세요?")
+                .repImageUrl("https://github.com/user-attachments/assets/84d6b4aa-12e9-40de-92e4-f85a512275d6") // 대표 이미지 (첫 번째 이미지)
+                .kakaoPlaceId("20809319")
+                .naverPlaceId("1071920016")
+                .build();
+        storeRepository.save(store);
     }
 
     private void initGabiaeDeals() {
@@ -104,11 +103,11 @@ public class DataInitializer {
             return; // 매장이 없으면 할인 정보도 생성하지 않음
         }
 
-        // 기존 할인 정보가 있는지 확인
-        var existingDeals = earlybirdDealRepository.findTopCurrentByStoreId(gabiaeStore.getId(), java.time.LocalDateTime.now());
-        if (existingDeals.isPresent()) {
-            return; // 이미 할인 정보가 있으면 생성하지 않음
-        }
+        // 기존 할인 정보가 있는지 확인 (주석처리 - 새로운 데이터 적용을 위해)
+        // var existingDeals = earlybirdDealRepository.findTopCurrentByStoreId(gabiaeStore.getId(), java.time.LocalDateTime.now());
+        // if (existingDeals.isPresent()) {
+        //     return; // 이미 할인 정보가 있으면 생성하지 않음
+        // }
 
         // 오전시간 커피 무료 사이즈업 할인 정보 생성
         EarlybirdDeal deal = EarlybirdDeal.builder()
@@ -135,11 +134,11 @@ public class DataInitializer {
         
         String storeId = gabiaeStore.getId();
         
-        // 이미 리뷰가 있는지 확인
-        long existingReviewCount = storeReviewRepository.countByStoreId(storeId);
-        if (existingReviewCount > 0) {
-            return; // 이미 리뷰가 있으면 생성하지 않음
-        }
+        // 이미 리뷰가 있는지 확인 (주석처리 - 새로운 이미지 적용을 위해)
+        // long existingReviewCount = storeReviewRepository.countByStoreId(storeId);
+        // if (existingReviewCount > 0) {
+        //     return; // 이미 리뷰가 있으면 생성하지 않음
+        // }
         
         // 리뷰 데이터 생성
         List<StoreReview> reviews = Arrays.asList(
@@ -168,27 +167,22 @@ public class DataInitializer {
         
         List<StoreReview> savedReviews = storeReviewRepository.saveAll(reviews);
         
-        // 리뷰 이미지 데이터 생성 (실제 이미지 URL 사용)
+        // 리뷰 이미지 데이터 생성 (가비애 실제 이미지 URL 사용)
         List<ReviewImage> images = Arrays.asList(
                 ReviewImage.builder()
                         .reviewId(savedReviews.get(0).getId()) // 잉뉴 리뷰
-                        .imageUrl("https://github.com/user-attachments/assets/6d8a9ce4-6ddd-48fb-b49d-7da679d1b7f4")
+                        .imageUrl("https://github.com/user-attachments/assets/174ee3e2-b8c3-4fb9-9a7f-e4b04bb16ab9")
                         .sortOrder(1)
-                        .build(),
-                ReviewImage.builder()
-                        .reviewId(savedReviews.get(0).getId()) // 잉뉴 리뷰
-                        .imageUrl("https://github.com/user-attachments/assets/72d30657-1470-4695-bc4c-66d63400b785")
-                        .sortOrder(2)
                         .build(),
                 ReviewImage.builder()
                         .reviewId(savedReviews.get(1).getId()) // 펭현숙퀸카 리뷰
-                        .imageUrl("https://github.com/user-attachments/assets/9f0ca3b8-9257-4de3-8c67-bc2cfdbb783f")
-                        .sortOrder(1)
+                        .imageUrl("https://github.com/user-attachments/assets/f1d81032-a660-4a70-895a-f417c038cce7")
+                        .sortOrder(2)
                         .build(),
                 ReviewImage.builder()
                         .reviewId(savedReviews.get(2).getId()) // 레이싱카 리뷰
-                        .imageUrl("https://github.com/user-attachments/assets/b1e1d9e4-48cc-4997-b367-19b0ecec6fbb")
-                        .sortOrder(1)
+                        .imageUrl("https://github.com/user-attachments/assets/6e86abc8-4f1b-4a7d-864b-5479cf0e51af")
+                        .sortOrder(3)
                         .build()
         );
         
@@ -204,11 +198,11 @@ public class DataInitializer {
         
         String storeId = gabiaeStore.getId();
         
-        // 이미 메뉴가 있는지 확인
-        long existingMenuCount = menuItemRepository.countByStoreId(storeId);
-        if (existingMenuCount > 0) {
-            return; // 이미 메뉴가 있으면 생성하지 않음
-        }
+        // 이미 메뉴가 있는지 확인 (주석처리 - 새로운 이미지 적용을 위해)
+        // long existingMenuCount = menuItemRepository.countByStoreId(storeId);
+        // if (existingMenuCount > 0) {
+        //     return; // 이미 메뉴가 있으면 생성하지 않음
+        // }
         
         // 메뉴 데이터 생성
         List<MenuItem> menus = Arrays.asList(
@@ -235,7 +229,7 @@ public class DataInitializer {
                     .phone("0507-149-3132")
                     .businessStatus(BusinessStatus.OPEN) // 9시 오픈
                     .aiRecommendation("파르페의 달콤한 유혹이 가득한 카페")
-                    .repImageUrl("https://github.com/user-attachments/assets/e3c0d03b-101e-4032-bca2-782fa817d178") // 대표 이미지
+                    .repImageUrl("https://github.com/user-attachments/assets/66af8542-388d-42a5-a8d7-6f1f761ff05b") // 대표 이미지 (첫 번째 이미지)
                     .kakaoPlaceId("1372734736")
                     .naverPlaceId("37915747")
                     .build();
@@ -320,22 +314,22 @@ public class DataInitializer {
         
         List<StoreReview> savedReviews = storeReviewRepository.saveAll(reviews);
         
-        // 리뷰 이미지 데이터 생성 (실제 이미지 URL 사용)
+        // 리뷰 이미지 데이터 생성 (그랑주 실제 이미지 URL 사용)
         List<ReviewImage> images = Arrays.asList(
                 ReviewImage.builder()
                         .reviewId(savedReviews.get(0).getId()) // 커피러버 리뷰
-                        .imageUrl("https://github.com/user-attachments/assets/8944f897-d6f3-42d8-9792-febfa1b7d7f2")
+                        .imageUrl("https://github.com/user-attachments/assets/d1850091-cf11-4bf9-94a5-998a6746042e")
                         .sortOrder(1)
                         .build(),
                 ReviewImage.builder()
                         .reviewId(savedReviews.get(1).getId()) // 디저트퀸 리뷰
-                        .imageUrl("https://github.com/user-attachments/assets/341ecefc-ef88-4acc-be14-7c69fe5c9b79")
-                        .sortOrder(1)
+                        .imageUrl("https://github.com/user-attachments/assets/17d5a32c-b0e8-444b-97e9-5b3bb5af722b")
+                        .sortOrder(2)
                         .build(),
                 ReviewImage.builder()
                         .reviewId(savedReviews.get(2).getId()) // 브런치맨 리뷰
-                        .imageUrl("https://github.com/user-attachments/assets/a1394394-f487-4c33-bca9-93438a3b3cbc")
-                        .sortOrder(1)
+                        .imageUrl("https://github.com/user-attachments/assets/ea5db312-4a4a-4acb-bc64-3afc79245526")
+                        .sortOrder(3)
                         .build()
         );
         

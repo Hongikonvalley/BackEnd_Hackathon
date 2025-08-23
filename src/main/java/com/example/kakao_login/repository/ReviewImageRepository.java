@@ -41,4 +41,9 @@ public interface ReviewImageRepository extends JpaRepository<ReviewImage, String
      * @param reviewId 리뷰 ID
      */
     void deleteByReviewId(String reviewId);
+
+    /**
+     * 여러 리뷰 ID에 해당하는 이미지들 조회
+     */
+    List<ReviewImage> findByReviewIdIn(List<String> reviewIds);
 }
