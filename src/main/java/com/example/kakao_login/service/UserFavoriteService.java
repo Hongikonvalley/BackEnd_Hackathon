@@ -7,6 +7,7 @@ import com.example.kakao_login.entity.EarlybirdDeal;
 import com.example.kakao_login.repository.UserFavoriteRepository;
 import com.example.kakao_login.repository.StoreRepository;
 import com.example.kakao_login.repository.EarlybirdDealRepository;
+import com.example.kakao_login.util.BusinessStatusUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,7 @@ public class UserFavoriteService {
     private final UserFavoriteRepository userFavoriteRepository;
     private final StoreRepository storeRepository;
     private final EarlybirdDealRepository dealRepository;
+    private final BusinessStatusUtil businessStatusUtil;
 
     /**
      * 즐겨찾기 상태 확인
@@ -90,6 +92,7 @@ public class UserFavoriteService {
                 .storeId(store.getId())
                 .storeName(store.getName())
                 .storeImage(store.getRepImageUrl())
+                .businessStatus(businessStatusUtil.getCurrentBusinessStatus(store.getBusinessStatus()))
                 .dealInfo(dealInfos.get(store.getId()))
                 .build())
             .collect(Collectors.toList());
