@@ -92,7 +92,7 @@ public class UserFavoriteService {
                 .storeId(store.getId())
                 .storeName(store.getName())
                 .storeImage(store.getRepImageUrl())
-                .businessStatus(businessStatusUtil.getCurrentBusinessStatus(store.getBusinessStatus()))
+                .businessStatus(businessStatusUtil.getCurrentBusinessStatus(store))
                 .dealInfo(dealInfos.get(store.getId()))
                 .build())
             .collect(Collectors.toList());

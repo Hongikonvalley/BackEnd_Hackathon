@@ -68,13 +68,16 @@ public class DataInitializer {
     }
 
     private void initGabiaeStore() {
-        // 기존 가비애 매장이 있으면 대표 이미지만 업데이트
+        // 기존 가비애 매장이 있으면 정보 업데이트
         Store existingStore = storeRepository.findByName("가비애").orElse(null);
         if (existingStore != null) {
             // 대표 이미지 URL 업데이트
             existingStore.setRepImageUrl("https://github.com/user-attachments/assets/84d6b4aa-12e9-40de-92e4-f85a512275d6");
             // AI 추천 내용 업데이트
             existingStore.setAiRecommendation("주로 오전 6시에 방문하고 아이스 아메리카노를 추천해요 잉뉴님께서 좋아하시는 케이크와 한 잔 어떠세요?");
+            // 영업 시간 업데이트 (24시간 영업)
+            existingStore.setOpenTime("00:00");
+            existingStore.setCloseTime("23:59");
             storeRepository.save(existingStore);
             return;
         }
@@ -88,6 +91,8 @@ public class DataInitializer {
                 .longitude(BigDecimal.valueOf(126.9295616))
                 .phone("070-773-4007")
                 .businessStatus(BusinessStatus.OPEN_24H) // 24시간 영업
+                .openTime("00:00") // 24시간 영업 시작
+                .closeTime("23:59") // 24시간 영업 종료
                 .aiRecommendation("주로 오전 6시에 방문하고 아이스 아메리카노를 추천해요 잉뉴님께서 좋아하시는 케이크와 한 잔 어떠세요?")
                 .repImageUrl("https://github.com/user-attachments/assets/84d6b4aa-12e9-40de-92e4-f85a512275d6") // 대표 이미지 (첫 번째 이미지)
                 .kakaoPlaceId("20809319")
@@ -218,23 +223,33 @@ public class DataInitializer {
     }
 
     private void initGrangeCafe() {
-        // 매장이 이미 존재하는지 확인 (이름으로 검색)
-        if (storeRepository.findByName("그랑주").isEmpty()) {
-            Store store = Store.builder()
-                    .userId("user-001")
-                    .name("그랑주")
-                    .address("서울 마포구 서교동 355-2")
-                    .latitude(BigDecimal.valueOf(37.5541563)) // 구글 지도에서 추출한 정확한 좌표
-                    .longitude(BigDecimal.valueOf(126.9214322))
-                    .phone("0507-149-3132")
-                    .businessStatus(BusinessStatus.OPEN) // 9시 오픈
-                    .aiRecommendation("파르페의 달콤한 유혹이 가득한 카페")
-                    .repImageUrl("https://github.com/user-attachments/assets/66af8542-388d-42a5-a8d7-6f1f761ff05b") // 대표 이미지 (첫 번째 이미지)
-                    .kakaoPlaceId("1372734736")
-                    .naverPlaceId("37915747")
-                    .build();
-            storeRepository.save(store);
+        // 기존 그랑주 매장이 있으면 정보 업데이트
+        Store existingStore = storeRepository.findByName("그랑주").orElse(null);
+        if (existingStore != null) {
+            // 영업 시간 업데이트 (09:00 ~ 24:00)
+            existingStore.setOpenTime("09:00");
+            existingStore.setCloseTime("24:00");
+            storeRepository.save(existingStore);
+            return;
         }
+        
+        // 새로운 그랑주 매장 생성
+        Store store = Store.builder()
+                .userId("user-001")
+                .name("그랑주")
+                .address("서울 마포구 서교동 355-2")
+                .latitude(BigDecimal.valueOf(37.5541563)) // 구글 지도에서 추출한 정확한 좌표
+                .longitude(BigDecimal.valueOf(126.9214322))
+                .phone("0507-149-3132")
+                .businessStatus(BusinessStatus.OPEN) // 일반 영업
+                .openTime("09:00") // 9시 오픈
+                .closeTime("24:00") // 24시 마감
+                .aiRecommendation("파르페의 달콤한 유혹이 가득한 카페")
+                .repImageUrl("https://github.com/user-attachments/assets/66af8542-388d-42a5-a8d7-6f1f761ff05b") // 대표 이미지 (첫 번째 이미지)
+                .kakaoPlaceId("1372734736")
+                .naverPlaceId("37915747")
+                .build();
+        storeRepository.save(store);
     }
 
     private void initGrangeMenus() {
