@@ -22,14 +22,28 @@ public class SearchRepository {
         var params = new MapSqlParameterSource();
         var where = new StringBuilder(" WHERE s.is_active = 1 ");
 
+        // --- 키워드 필터: 비교/LIKE 양쪽 모두 동일 collation 강제 ---
         if (req.hasKeyword()) {
-            where.append(" AND (s.name LIKE :kw OR s.description LIKE :kw) ");
-            params.addValue("kw", "%" + req.q() + "%");
+            String kw = Optional.ofNullable(req.q()).orElse("");
+            params.addValue("kw", kw);
+            where.append("""
+               AND (
+                 (CAST(:kw AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_0900_ai_ci = '' COLLATE utf8mb4_0900_ai_ci)
+                 OR s.name        COLLATE utf8mb4_0900_ai_ci LIKE CONCAT('%', CAST(:kw AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_0900_ai_ci, '%')
+                 OR s.description COLLATE utf8mb4_0900_ai_ci LIKE CONCAT('%', CAST(:kw AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_0900_ai_ci, '%')
+               )
+            """);
         }
+
+        // --- 카테고리: '=' 비교도 collation 통일 ---
         if (req.categoryId() != null && !req.categoryId().isBlank()) {
-            where.append(" AND s.category_id = :catId ");
+            where.append("""
+              AND (s.category_id COLLATE utf8mb4_0900_ai_ci
+                   = CAST(:catId AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_0900_ai_ci)
+            """);
             params.addValue("catId", req.categoryId());
         }
+
         if (req.tagIds() != null && !req.tagIds().isBlank()) {
             var ids = Arrays.stream(req.tagIds().split(",")).map(String::trim).toList();
             where.append("""
@@ -99,49 +113,48 @@ public class SearchRepository {
             """);
         }
 
+        // 딜 존재 필터: status 비교도 collation 통일
         if (Boolean.TRUE.equals(req.hasDeal())) {
             where.append("""
               AND EXISTS (
                 SELECT 1 FROM earlybird_deals d
                 LEFT JOIN earlybird_inventory i ON i.deal_id = d.id AND i.quota_left > 0
-                WHERE d.store_id = s.id AND d.status = 'ACTIVE'
+                WHERE d.store_id = s.id
+                  AND (d.status COLLATE utf8mb4_0900_ai_ci = 'ACTIVE' COLLATE utf8mb4_0900_ai_ci)
               )
             """);
         }
 
+        // 정렬
         String orderBy;
         if (req.sort() == null || req.sort().isBlank()) {
             // 기본 정렬: 좌표 있으면 거리순, 없으면 이름순
             if (req.lat() != null && req.lng() != null) {
                 orderBy = " ORDER BY (distance_km IS NULL) ASC, distance_km ASC ";
             } else {
-                orderBy = " ORDER BY name ASC ";
+                orderBy = " ORDER BY name COLLATE utf8mb4_0900_ai_ci ASC ";
             }
         } else {
             switch (req.sort()) {
                 case "distance" ->
                         orderBy = " ORDER BY (distance_km IS NULL) ASC, distance_km ASC ";
                 case "rating" ->
-                    // ✅ base에 있는 컬럼명 사용 (s.rating_avg 아님)
                         orderBy = " ORDER BY (rating_avg IS NULL) ASC, rating_avg DESC, rating_count DESC ";
                 case "discount" ->
                         orderBy = " ORDER BY (best_discount_pct IS NULL) ASC, best_discount_pct DESC ";
                 case "popularity" ->
                         orderBy = " ORDER BY (popularity_score IS NULL) ASC, popularity_score DESC ";
                 case "recent" ->
-                    // recent가 필요하면 created_at을 base에 노출해야 함 (stores에 컬럼 없으면 name으로 대체)
-                    // orderBy = " ORDER BY (created_at IS NULL) ASC, created_at DESC ";
-                        orderBy = " ORDER BY name ASC ";
+                        orderBy = " ORDER BY name COLLATE utf8mb4_0900_ai_ci ASC ";
                 default -> {
                     if (req.lat() != null && req.lng() != null) {
                         orderBy = " ORDER BY (distance_km IS NULL) ASC, distance_km ASC ";
                     } else {
-                        orderBy = " ORDER BY name ASC ";
+                        orderBy = " ORDER BY name COLLATE utf8mb4_0900_ai_ci ASC ";
                     }
                 }
             }
         }
-
 
         int page = req.pageOrDefault();
         int size = req.sizeOrDefault();
@@ -159,9 +172,14 @@ public class SearchRepository {
               (SELECT MAX(CASE WHEN discount_value REGEXP '^[0-9]+$'
                                THEN CAST(discount_value AS SIGNED) ELSE 0 END)
                  FROM earlybird_deals d
-                WHERE d.store_id = s.id AND d.status='ACTIVE') AS best_discount_pct,
+                WHERE d.store_id = s.id
+                  AND (d.status COLLATE utf8mb4_0900_ai_ci = 'ACTIVE' COLLATE utf8mb4_0900_ai_ci)
+              ) AS best_discount_pct,
               (SELECT 1 FROM user_favorites f
-                WHERE f.user_id = :uid AND f.store_id = s.id LIMIT 1) AS fav_flag,
+                WHERE (f.user_id COLLATE utf8mb4_0900_ai_ci
+                       = CAST(:uid AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_0900_ai_ci)
+                  AND f.store_id = s.id
+                LIMIT 1) AS fav_flag,
               (COALESCE(s.rating_count,0) * 1.0 +
                (SELECT COUNT(*) FROM user_favorites uf WHERE uf.store_id = s.id) * 2.0) AS popularity_score
             FROM stores s
@@ -221,7 +239,7 @@ public class SearchRepository {
             }
             tagsByStore = tmpTags;
 
-            // 3) 카테고리 배치 조회(매장 1:카테고리 1)
+            // 3) 카테고리 배치 조회
             var catList = jdbc.query("""
                 SELECT s.id AS store_id, c.name
                   FROM stores s
@@ -271,7 +289,7 @@ public class SearchRepository {
             ));
         }
 
-        // total 계산
+        // total 계산 (같은 where 사용)
         String countSql = "SELECT COUNT(*) FROM stores s " + where;
         long total = jdbc.queryForObject(countSql, params, Long.class);
         boolean hasNext = (long) page * size < total;
@@ -282,7 +300,7 @@ public class SearchRepository {
     public Map<String, Object> getFilterMeta(Double lat, Double lng, Double radiusKm, String type) {
         var result = new HashMap<String, Object>();
 
-        // categories (parent_id null 허용)
+        // categories
         var categories = jdbc.query(
                 "SELECT id, name, parent_id FROM categories",
                 (rs, n) -> {
@@ -295,7 +313,7 @@ public class SearchRepository {
         );
         result.put("categories", categories);
 
-        // tags (기본: cnt=0, 반경 지정 시 COUNT)
+        // tags
         var params = new MapSqlParameterSource();
         String tagSql = "SELECT t.id, t.name, t.type, 0 AS cnt FROM tags t";
         if (lat != null && lng != null && radiusKm != null) {
