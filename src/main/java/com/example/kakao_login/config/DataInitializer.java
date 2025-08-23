@@ -226,9 +226,9 @@ public class DataInitializer {
         // 기존 그랑주 매장이 있으면 정보 업데이트
         Store existingStore = storeRepository.findByName("그랑주").orElse(null);
         if (existingStore != null) {
-            // 영업 시간 업데이트 (09:00 ~ 24:00)
+            // 영업 시간 업데이트 (09:00 ~ 00:00)
             existingStore.setOpenTime("09:00");
-            existingStore.setCloseTime("24:00");
+            existingStore.setCloseTime("00:00");
             storeRepository.save(existingStore);
             return;
         }
@@ -243,7 +243,7 @@ public class DataInitializer {
                 .phone("0507-149-3132")
                 .businessStatus(BusinessStatus.OPEN) // 일반 영업
                 .openTime("09:00") // 9시 오픈
-                .closeTime("24:00") // 24시 마감
+                .closeTime("00:00") // 24시 마감 (다음날 00:00)
                 .aiRecommendation("파르페의 달콤한 유혹이 가득한 카페")
                 .repImageUrl("https://github.com/user-attachments/assets/66af8542-388d-42a5-a8d7-6f1f761ff05b") // 대표 이미지 (첫 번째 이미지)
                 .kakaoPlaceId("1372734736")
