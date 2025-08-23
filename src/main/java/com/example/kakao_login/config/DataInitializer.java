@@ -25,35 +25,35 @@ public class DataInitializer {
     private final MenuItemRepository menuItemRepository;
     private final EarlybirdDealRepository earlybirdDealRepository;
 
-    // @Bean
-    // @Transactional
-    // CommandLineRunner initData() {
-    //     return args -> {
-    //         // 사용자 데이터 초기화
-    //         initUser();
-    //         
-    //         // 가비애 매장 데이터 초기화
-    //         initGabiaeStore();
-    //         
-    //         // 가비애 메뉴 데이터 초기화
-    //         initGabiaeMenus();
-    //         
-    //         // 가비애 할인 데이터 초기화
-    //         initGabiaeDeals();
-    //         
-    //         // 가비애 리뷰 데이터 초기화
-    //         initGabiaeReviews();
-    //         
-    //         // 그랑주 카페 데이터 초기화
-    //         initGrangeCafe();
-    //         
-    //         // 그랑주 카페 메뉴 데이터 초기화
-    //         initGrangeMenus();
-    //         
-    //         // 그랑주 카페 리뷰 데이터 초기화
-    //         initGrangeReviews();
-    //     };
-    // }
+    @Bean
+    @Transactional
+    CommandLineRunner initData() {
+        return args -> {
+            // 사용자 데이터 초기화
+            initUser();
+            
+            // 가비애 매장 데이터 초기화
+            initGabiaeStore();
+            
+            // 가비애 메뉴 데이터 초기화
+            initGabiaeMenus();
+            
+            // 가비애 할인 데이터 초기화
+            initGabiaeDeals();
+            
+            // 가비애 리뷰 데이터 초기화
+            initGabiaeReviews();
+            
+            // 그랑주 카페 데이터 초기화
+            initGrangeCafe();
+            
+            // 그랑주 카페 메뉴 데이터 초기화
+            initGrangeMenus();
+            
+            // 그랑주 카페 리뷰 데이터 초기화
+            initGrangeReviews();
+        };
+    }
 
     private void initUser() {
             String email = "mutsa@mutsa.shop";

@@ -50,12 +50,14 @@ public class BusinessStatusUtil {
             return getDefaultBusinessStatusMessage(businessStatus);
         }
 
-        // 24시간을 넘어가는 영업 (예: 22:00 ~ 06:00)
+        // 24시간을 넘어가는 영업 (예: 22:00 ~ 06:00 또는 09:00 ~ 00:00)
         if (closeTime.isBefore(openTime)) {
-            if (currentTime.isAfter(openTime) || currentTime.isBefore(closeTime)) {
+            if (currentTime.isAfter(openTime) && currentTime.isBefore(closeTime)) {
                 return "지금 영업중";
-            } else {
+            } else if (currentTime.isBefore(openTime)) {
                 return openTime.format(TIME_FORMATTER) + " 오픈";
+            } else {
+                return "영업종료";
             }
         } else {
             // 일반적인 영업 시간 (예: 09:00 ~ 22:00)

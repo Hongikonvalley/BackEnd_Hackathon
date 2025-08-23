@@ -34,6 +34,9 @@ public class TestController {
                     storeMap.put("address", store.getAddress());
                     storeMap.put("kakao_place_id", store.getKakaoPlaceId());
                     storeMap.put("naver_place_id", store.getNaverPlaceId());
+                    storeMap.put("open_time", store.getOpenTime());
+                    storeMap.put("close_time", store.getCloseTime());
+                    storeMap.put("business_status", store.getBusinessStatus());
                     return storeMap;
                 })
                 .toList();
