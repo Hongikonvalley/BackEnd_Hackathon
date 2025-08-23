@@ -63,6 +63,7 @@ public class DataInitializer {
                         .email(email)
                         .password(encoder.encode(rawPw))
                         .nickname("잉뉴")
+                        .profileImageUrl("https://example.com/default-profile.png")
                         .build()
         ));
     }

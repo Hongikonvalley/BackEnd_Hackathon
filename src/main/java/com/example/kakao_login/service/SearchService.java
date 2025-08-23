@@ -22,21 +22,30 @@ public class SearchService {
     }
 
     public FilterMetaResponse getFilterMeta(Double lat, Double lng, Double radiusKm, String type) {
-        Map<String,Object> raw = repo.getFilterMeta(lat, lng, radiusKm, type);
+        Map<String, Object> raw = repo.getFilterMeta(lat, lng, radiusKm, type);
 
-        var categories = ((List<Map<String,Object>>) raw.get("categories")).stream()
+        // 각 요소는 조회 결과에 따라 존재하지 않을 수 있으므로 안전하게 처리한다.
+        List<Map<String, Object>> categoryList =
+                (List<Map<String, Object>>) raw.getOrDefault("categories", List.of());
+        var categories = categoryList.stream()
                 .map(m -> new FilterMetaResponse.Category(
-                        (String)m.get("id"), (String)m.get("name"), (String)m.get("parent_id")))
+                        (String) m.get("id"),
+                        (String) m.get("name"),
+                        (String) m.get("parent_id")))
                 .toList();
 
-        var tags = ((List<Map<String,Object>>) raw.get("tags")).stream()
+        List<Map<String, Object>> tagList =
+                (List<Map<String, Object>>) raw.getOrDefault("tags", List.of());
+        var tags = tagList.stream()
                 .map(m -> new FilterMetaResponse.Tag(
-                        (String)m.get("id"), (String)m.get("name"), (String)m.get("type"),
-                        (Integer)m.get("count")))
+                        (String) m.get("id"),
+                        (String) m.get("name"),
+                        (String) m.get("type"),
+                        ((Number) m.getOrDefault("count", 0)).intValue()))
                 .toList();
 
-        var sortOptions = (List<String>) raw.get("sort_options");
-        var timeSlots = (List<String>) raw.get("time_slots");
+        var sortOptions = (List<String>) raw.getOrDefault("sort_options", List.of());
+        var timeSlots = (List<String>) raw.getOrDefault("time_slots", List.of());
         return new FilterMetaResponse(categories, tags, sortOptions, timeSlots);
     }
 }
