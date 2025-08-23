@@ -1,9 +1,12 @@
 package com.example.kakao_login.service;
 
 import com.example.kakao_login.dto.store.StoreDetailResponse;
+import com.example.kakao_login.dto.store.TodaysPopularStoreResponse;
+import com.example.kakao_login.entity.BusinessStatus;
 import com.example.kakao_login.entity.EarlybirdDeal;
 import com.example.kakao_login.entity.MenuItem;
 import com.example.kakao_login.entity.Store;
+import com.example.kakao_login.entity.StoreView;
 import com.example.kakao_login.exception.StoreDetailServiceException;
 import com.example.kakao_login.exception.StoreNotFoundException;
 import com.example.kakao_login.mapper.StoreDetailMapper;
@@ -11,11 +14,13 @@ import com.example.kakao_login.repository.EarlybirdDealRepository;
 import com.example.kakao_login.repository.MenuItemRepository;
 import com.example.kakao_login.repository.StoreRepository;
 import com.example.kakao_login.repository.StoreReviewRepository;
+import com.example.kakao_login.repository.StoreViewRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -35,6 +40,7 @@ public class StoreDetailService {
     private final MenuItemRepository menuItemRepository;
     private final EarlybirdDealRepository dealRepository;
     private final StoreReviewRepository storeReviewRepository;
+    private final StoreViewRepository storeViewRepository;
     private final UserFavoriteService userFavoriteService;
     private final StoreDetailMapper mapper;
 
@@ -75,6 +81,10 @@ public class StoreDetailService {
             );
 
             log.debug("매장 상세 조회 완료 - storeId: {}, 메뉴수: {}", storeId, menuItems.size());
+            
+            // 6. 조회수 증가 (비동기 처리 가능)
+            incrementStoreView(storeId);
+            
             return response;
 
         } catch (StoreNotFoundException e) {
@@ -139,5 +149,122 @@ public class StoreDetailService {
         
         // 쿠폰 상태는 기본값 (향후 쿠폰 서비스 연동)
         return mapper.createUserContext(userId, isFavorite, false);
+    }
+
+    /**
+     * 매장 조회수 증가
+     * @param storeId 매장 ID
+     */
+    @Transactional
+    public void incrementStoreView(String storeId) {
+        try {
+            LocalDate today = LocalDate.now();
+            
+            // 기존 조회수 레코드 조회
+            StoreView existingView = storeViewRepository.findByStoreIdAndViewDateAndIsActiveTrue(storeId, today)
+                .orElse(null);
+
+            if (existingView != null) {
+                // 기존 레코드가 있으면 조회수 증가
+                existingView.setViewCount(existingView.getViewCount() + 1);
+                storeViewRepository.save(existingView);
+            } else {
+                // 새 레코드 생성
+                StoreView newView = StoreView.builder()
+                    .storeId(storeId)
+                    .viewDate(today)
+                    .viewCount(1)
+                    .isActive(true)
+                    .build();
+                storeViewRepository.save(newView);
+            }
+            
+            log.debug("매장 조회수 증가 완료 - storeId: {}, date: {}", storeId, today);
+            
+        } catch (Exception e) {
+            log.error("매장 조회수 증가 중 오류 - storeId: {}", storeId, e);
+            // 조회수 증가 실패는 전체 요청에 영향을 주지 않도록 예외를 던지지 않음
+        }
+    }
+
+    /**
+     * 오늘의 인기 매장 조회
+     * @return 오늘의 인기 매장 응답
+     */
+    public TodaysPopularStoreResponse getTodaysPopularStore() {
+        log.debug("오늘의 인기 매장 조회 시작");
+
+        try {
+            LocalDate today = LocalDate.now();
+            
+            // 오늘의 최고 조회수 매장 조회
+            StoreView topStoreView = storeViewRepository.findTopByViewDateOrderByViewCountDesc(today)
+                .orElse(null);
+
+            if (topStoreView == null) {
+                log.warn("오늘의 조회수 데이터가 없음");
+                return null; // 데이터가 없으면 null 반환
+            }
+
+            // 매장 정보 조회
+            Store store = findStoreById(topStoreView.getStoreId());
+            
+            // 현재 할인 정보 조회
+            EarlybirdDeal currentDeal = findCurrentDeal(store.getId());
+
+            // 리뷰 평점 계산
+            List<com.example.kakao_login.entity.StoreReview> reviews = storeReviewRepository.findByStoreIdOrderByCreatedAtDesc(store.getId());
+            Double averageRating = reviews.isEmpty() ? 0.0 : reviews.stream()
+                .mapToDouble(review -> review.getRating().doubleValue())
+                .average()
+                .orElse(0.0);
+            averageRating = Math.round(averageRating * 10.0) / 10.0; // 소수점 1자리
+
+            // DTO 변환
+            TodaysPopularStoreResponse response = TodaysPopularStoreResponse.builder()
+                .storeId(store.getId())
+                .storeName(store.getName())
+                .repImageUrl(store.getRepImageUrl())
+                .businessInfo(TodaysPopularStoreResponse.BusinessInfo.builder()
+                    .status(store.getBusinessStatus().toString().toLowerCase())
+                    .statusMessage(getBusinessStatusMessage(store.getBusinessStatus()))
+                    .build())
+                .dealInfo(currentDeal != null ? TodaysPopularStoreResponse.DealInfo.builder()
+                    .title(currentDeal.getTitle())
+                    .description(currentDeal.getDescription())
+                    .build() : null)
+                .rating(averageRating)
+                .build();
+
+            log.debug("오늘의 인기 매장 조회 완료 - storeId: {}, viewCount: {}", 
+                store.getId(), topStoreView.getViewCount());
+            return response;
+
+        } catch (Exception e) {
+            log.error("오늘의 인기 매장 조회 중 오류", e);
+            throw new StoreDetailServiceException("오늘의 인기 매장 조회 실패", e);
+        }
+    }
+
+    /**
+     * 영업 상태 메시지 생성
+     */
+    private String getBusinessStatusMessage(BusinessStatus status) {
+        switch (status) {
+            case OPEN_24H:
+                return "24시간 영업";
+            case OPEN:
+                return "영업중";
+            case CLOSED:
+                return "영업종료";
+            case BREAK_TIME:
+                return "브레이크타임";
+            case PREPARING:
+                return "준비중";
+            case HOLIDAY:
+                return "휴무일";
+            default:
+                return "영업정보 없음";
+        }
     }
 }

@@ -45,12 +45,17 @@ public class SearchRepository {
         }
 
         if (req.tagIds() != null && !req.tagIds().isBlank()) {
-            var ids = Arrays.stream(req.tagIds().split(",")).map(String::trim).toList();
-            where.append("""
-               AND EXISTS (SELECT 1 FROM store_tags st
-                           WHERE st.store_id = s.id AND st.tag_id IN (:tagIds))
-            """);
-            params.addValue("tagIds", ids);
+            var ids = Arrays.stream(req.tagIds().split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())   // ✅ 빈 스트링 제거
+                    .toList();
+            if (!ids.isEmpty()) {
+                where.append("""
+           AND EXISTS (SELECT 1 FROM store_tags st
+                       WHERE st.store_id = s.id AND st.tag_id IN (:tagIds))
+        """);
+                params.addValue("tagIds", ids);
+            }
         }
 
         // 위치/반경
