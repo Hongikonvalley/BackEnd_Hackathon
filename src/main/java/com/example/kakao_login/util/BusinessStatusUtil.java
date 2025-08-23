@@ -55,7 +55,7 @@ public class BusinessStatusUtil {
             if (currentTime.isAfter(openTime) && currentTime.isBefore(closeTime)) {
                 return "지금 영업중";
             } else if (currentTime.isBefore(openTime)) {
-                return openTime.format(TIME_FORMATTER) + " 오픈";
+                return formatTimeForDisplay(openTime) + " 오픈";
             } else {
                 return "영업종료";
             }
@@ -64,7 +64,7 @@ public class BusinessStatusUtil {
             if (currentTime.isAfter(openTime) && currentTime.isBefore(closeTime)) {
                 return "지금 영업중";
             } else if (currentTime.isBefore(openTime)) {
-                return openTime.format(TIME_FORMATTER) + " 오픈";
+                return formatTimeForDisplay(openTime) + " 오픈";
             } else {
                 return "영업종료";
             }
@@ -83,6 +83,14 @@ public class BusinessStatusUtil {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    /**
+     * 시간을 표시용 형식으로 변환 (예: 09:00 → 9시)
+     */
+    private String formatTimeForDisplay(LocalTime time) {
+        int hour = time.getHour();
+        return hour + "시";
     }
 
     /**
