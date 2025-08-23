@@ -28,6 +28,13 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, String> {
         """)
     List<MenuItem> findActiveByStoreIdOrderBySortOrder(@Param("storeId") String storeId);
 
+    /**
+     * 매장의 활성 메뉴 목록 조회 (삭제용)
+     * @param storeId 매장 ID
+     * @return 활성 메뉴 목록
+     */
+    List<MenuItem> findByStoreIdAndIsActiveTrue(String storeId);
+
 
 
     /**

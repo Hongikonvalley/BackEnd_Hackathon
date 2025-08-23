@@ -23,6 +23,12 @@ public record StoreDetailResponse(
     
     String address, // 주소
     
+    @JsonProperty("rep_image_url")
+    String repImageUrl, // 대표 이미지 URL
+    
+    @JsonProperty("ai_recommendation")
+    String aiRecommendation, // AI 추천 메시지
+    
     Location location, // 위치정보
     
     @JsonProperty("external_links")
@@ -159,6 +165,8 @@ public record StoreDetailResponse(
                 .storeId(maskStoreId(store.getId())) // UUID 마스킹
                 .name(store.getName())
                 .address(store.getAddress())
+                .repImageUrl(store.getRepImageUrl())
+                .aiRecommendation(store.getAiRecommendation())
                 .location(Location.builder()
                     .latitude(store.getLatitude() != null ? store.getLatitude().doubleValue() : null)
                     .longitude(store.getLongitude() != null ? store.getLongitude().doubleValue() : null)

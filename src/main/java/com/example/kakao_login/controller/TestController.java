@@ -1,16 +1,11 @@
 package com.example.kakao_login.controller;
 
 import com.example.kakao_login.common.ApiResponse;
-import com.example.kakao_login.repository.StoreRepository;
-import com.example.kakao_login.repository.StoreViewRepository;
-import com.example.kakao_login.repository.EarlybirdDealRepository;
+import com.example.kakao_login.entity.*;
+import com.example.kakao_login.repository.*;
 import com.example.kakao_login.service.UserPointService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +19,9 @@ public class TestController {
     private final StoreRepository storeRepository;
     private final StoreViewRepository storeViewRepository;
     private final EarlybirdDealRepository earlybirdDealRepository;
+    private final StoreReviewRepository storeReviewRepository;
+    private final ReviewImageRepository reviewImageRepository;
+    private final MenuItemRepository menuItemRepository;
     private final UserPointService userPointService;
 
     @GetMapping("/stores")
@@ -50,6 +48,15 @@ public class TestController {
             storeRepository.save(store);
         });
         return ApiResponse.success("가비애 매장 외부 링크 정보가 업데이트되었습니다.");
+    }
+
+    @PostMapping("/stores/gabiae/update-rep-image")
+    public ApiResponse<String> updateGabiaeRepImage() {
+        storeRepository.findByName("가비애").ifPresent(store -> {
+            store.setRepImageUrl("https://github.com/user-attachments/assets/84d6b4aa-12e9-40de-92e4-f85a512275d6");
+            storeRepository.save(store);
+        });
+        return ApiResponse.success("가비애 매장 대표 이미지가 업데이트되었습니다.");
     }
 
     /**
@@ -156,6 +163,71 @@ public class TestController {
             return ApiResponse.success("포인트 차감 완료: " + points + "포인트");
         } catch (Exception e) {
             return ApiResponse.fail("포인트 차감 실패: " + e.getMessage(), 500);
+        }
+    }
+
+    @PostMapping("/stores/gabiae/update-info")
+    public ApiResponse<String> updateGabiaeInfo() {
+        Store store = storeRepository.findByName("가비애").orElse(null);
+        if (store == null) {
+            return ApiResponse.fail("가비애 매장을 찾을 수 없습니다.", 404);
+        }
+        
+        // 대표 이미지와 AI 추천 업데이트
+        store.setRepImageUrl("https://github.com/user-attachments/assets/84d6b4aa-12e9-40de-92e4-f85a512275d6");
+        store.setAiRecommendation("주로 오전 6시에 방문하고 아이스 아메리카노를 추천해요\n잉뉴님께서 좋아하시는 케이크와 한 잔 어떠세요?");
+        storeRepository.save(store);
+        
+        return ApiResponse.success("가비애 매장 정보 업데이트 완료");
+    }
+
+    @DeleteMapping("/stores/{storeName}/complete")
+    public ApiResponse<String> completeDeleteStore(@PathVariable String storeName) {
+        try {
+            Store store = storeRepository.findByName(storeName).orElse(null);
+            if (store == null) {
+                return ApiResponse.fail(storeName + " 매장을 찾을 수 없습니다.", 404);
+            }
+            
+            String storeId = store.getId();
+            int deletedCount = 0;
+            
+            // 1. 리뷰 이미지 삭제
+            List<StoreReview> reviews = storeReviewRepository.findByStoreIdOrderByCreatedAtDesc(storeId);
+            if (!reviews.isEmpty()) {
+                List<String> reviewIds = reviews.stream().map(StoreReview::getId).toList();
+                List<ReviewImage> reviewImages = reviewImageRepository.findByReviewIdIn(reviewIds);
+                reviewImageRepository.deleteAll(reviewImages);
+                deletedCount += reviewImages.size();
+            }
+            
+            // 2. 리뷰 삭제
+            storeReviewRepository.deleteAll(reviews);
+            deletedCount += reviews.size();
+            
+            // 3. 메뉴 삭제
+            List<MenuItem> menus = menuItemRepository.findByStoreIdAndIsActiveTrue(storeId);
+            menuItemRepository.deleteAll(menus);
+            deletedCount += menus.size();
+            
+            // 4. 할인 정보 삭제
+            List<EarlybirdDeal> deals = earlybirdDealRepository.findByStoreIdAndIsActiveTrue(storeId);
+            earlybirdDealRepository.deleteAll(deals);
+            deletedCount += deals.size();
+            
+            // 5. 매장 조회수 삭제
+            List<StoreView> storeViews = storeViewRepository.findByStoreId(storeId);
+            storeViewRepository.deleteAll(storeViews);
+            deletedCount += storeViews.size();
+            
+            // 6. 매장 삭제
+            storeRepository.delete(store);
+            deletedCount += 1;
+            
+            return ApiResponse.success(storeName + " 매장 및 관련 데이터 완전 삭제 완료 (총 " + deletedCount + "개 항목 삭제)");
+            
+        } catch (Exception e) {
+            return ApiResponse.fail("매장 삭제 중 오류 발생: " + e.getMessage(), 500);
         }
     }
 }

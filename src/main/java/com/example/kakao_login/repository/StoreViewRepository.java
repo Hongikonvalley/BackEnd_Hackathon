@@ -43,4 +43,9 @@ public interface StoreViewRepository extends JpaRepository<StoreView, String> {
         LIMIT 1
     """)
     Optional<StoreView> findTopByViewDateOrderByViewCountDesc(@Param("viewDate") LocalDate viewDate);
+
+    /**
+     * 특정 매장의 모든 조회수 기록 조회 (삭제용)
+     */
+    List<StoreView> findByStoreId(String storeId);
 }
