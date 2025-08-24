@@ -3,6 +3,7 @@ package com.example.kakao_login.controller;
 import com.example.kakao_login.common.ApiResponse;
 import com.example.kakao_login.dto.store.StoreDetailResponse;
 import com.example.kakao_login.dto.store.TodaysPopularStoreResponse;
+import com.example.kakao_login.dto.store.HotMorningSaleResponse;
 import com.example.kakao_login.service.StoreDetailService;
 
 import jakarta.validation.constraints.NotBlank;
@@ -63,6 +64,29 @@ public class StoreDetailController {
             log.error("오늘의 인기 매장 조회 실패", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.fail("오늘의 인기 매장 조회 중 오류가 발생했습니다.", 500));
+        }
+    }
+
+    /**
+     * 오늘의 HOT 모닝 세일 조회
+     * 현재 유효한 얼리버드 딜이 있는 매장들의 정보를 조회합니다.
+     * 
+     * @return HOT 모닝 세일 응답
+     */
+    @GetMapping("/morning-sale")
+    public ApiResponse<HotMorningSaleResponse> getHotMorningSales() {
+        log.info("오늘의 HOT 모닝 세일 조회 API 호출");
+        
+        try {
+            HotMorningSaleResponse response = storeDetailService.getHotMorningSales();
+            
+            log.info("오늘의 HOT 모닝 세일 조회 성공. 매장 수: {}", response.getTotalCount());
+            
+            return ApiResponse.success(response);
+            
+        } catch (Exception e) {
+            log.error("오늘의 HOT 모닝 세일 조회 중 오류 발생", e);
+            throw e;
         }
     }
 }

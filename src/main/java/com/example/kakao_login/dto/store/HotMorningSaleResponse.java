@@ -1,4 +1,4 @@
-package com.example.kakao_login.dto.deal;
+package com.example.kakao_login.dto.store;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
