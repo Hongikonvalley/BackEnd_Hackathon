@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
+import java.time.LocalDate;
 
 @Configuration
 @RequiredArgsConstructor
@@ -24,6 +25,7 @@ public class DataInitializer {
     private final ReviewImageRepository reviewImageRepository;
     private final MenuItemRepository menuItemRepository;
     private final EarlybirdDealRepository earlybirdDealRepository;
+    private final StoreViewRepository storeViewRepository;
 
     // @Bean
     // @Transactional
@@ -136,13 +138,13 @@ public class DataInitializer {
         }
         
         String storeId = gabiaeStore.getId();
-        
+
         // 이미 리뷰가 있는지 확인 (주석처리 - 새로운 이미지 적용을 위해)
         // long existingReviewCount = storeReviewRepository.countByStoreId(storeId);
         // if (existingReviewCount > 0) {
         //     return; // 이미 리뷰가 있으면 생성하지 않음
         // }
-        
+
         // 리뷰 데이터 생성
         List<StoreReview> reviews = Arrays.asList(
                 StoreReview.builder()
@@ -167,9 +169,9 @@ public class DataInitializer {
                         .content("2층 자리에 콘센트 많아서 좋습니다!!! 아메리카노 추천 오전 러닝 뛰고 오기 딱 좋아요")
                         .build()
         );
-        
+
         List<StoreReview> savedReviews = storeReviewRepository.saveAll(reviews);
-        
+
         // 리뷰 이미지 데이터 생성 (가비애 실제 이미지 URL 사용)
         List<ReviewImage> images = Arrays.asList(
                 ReviewImage.builder()
@@ -188,7 +190,7 @@ public class DataInitializer {
                         .sortOrder(3)
                         .build()
         );
-        
+
         reviewImageRepository.saveAll(images);
     }
 
@@ -322,6 +324,13 @@ public class DataInitializer {
                         .userNickname("카페탐험가")
                         .rating(BigDecimal.valueOf(4.5))
                         .content("인테리어가 예쁘고 사진 찍기 좋은 카페입니다. 파르페도 예쁘게 나와요!")
+                        .build(),
+                StoreReview.builder()
+                        .storeId(storeId)
+                        .userId("user-잉뉴")
+                        .userNickname("잉뉴")
+                        .rating(BigDecimal.valueOf(4.5))
+                        .content("그랑주도 좋아요! 아침에 파르페와 아메리카노 한잔으로 하루를 시작해요.")
                         .build()
         );
         
@@ -347,5 +356,28 @@ public class DataInitializer {
         );
         
         reviewImageRepository.saveAll(images);
+    }
+
+
+    @Bean
+    @Transactional
+    CommandLineRunner initDefaultStoreViewData() {
+        return args -> initDefaultStoreView();
+    }
+
+    private void initDefaultStoreView() {
+        storeRepository.findByName("가비애").ifPresent(store -> {
+            LocalDate today = LocalDate.now();
+            storeViewRepository
+                    .findByStoreIdAndViewDateAndIsActiveTrue(store.getId(), today)
+                    .orElseGet(() -> storeViewRepository.save(
+                            StoreView.builder()
+                                    .storeId(store.getId())
+                                    .viewDate(today)
+                                    .viewCount(1)
+                                    .isActive(true)
+                                    .build()
+                    ));
+        });
     }
 }

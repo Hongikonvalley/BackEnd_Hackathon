@@ -305,17 +305,12 @@ public class SearchRepository {
     public Map<String, Object> getFilterMeta(Double lat, Double lng, Double radiusKm, String type) {
         var result = new HashMap<String, Object>();
 
-        // categories
-        var categories = jdbc.query(
-                "SELECT id, name, parent_id FROM categories",
-                (rs, n) -> {
-                    var m = new LinkedHashMap<String, Object>();
-                    m.put("id", rs.getString("id"));
-                    m.put("name", rs.getString("name"));
-                    m.put("parent_id", rs.getString("parent_id"));
-                    return m;
-                }
-        );
+        // categories: 홈 화면용 기본 4개 카테고리(더보기 제외)
+        var categories = new ArrayList<Map<String, Object>>();
+        categories.add(Map.of("id", "cafe", "name", "카페"));
+        categories.add(Map.of("id", "bakery", "name", "베이커리"));
+        categories.add(Map.of("id", "brunch", "name", "브런치"));
+        categories.add(Map.of("id", "salad", "name", "샐러드"));
         result.put("categories", categories);
 
         // tags
@@ -355,7 +350,12 @@ public class SearchRepository {
         result.put("tags", tags);
 
         result.put("sort_options", List.of("distance","popularity","discount","rating","recent"));
-        result.put("time_slots", List.of("06:00-07:00","07:00-08:00","08:00-09:00"));
+        result.put("time_slots", List.of(
+                "05:00-06:00",
+                "06:00-07:00",
+                "07:00-08:00",
+                "08:00-09:00"
+        ));
         return result;
     }
 }
