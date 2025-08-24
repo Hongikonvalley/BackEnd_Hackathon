@@ -64,4 +64,20 @@ public interface EarlybirdDealRepository extends JpaRepository<EarlybirdDeal, St
      * @return 활성 할인 목록
      */
     List<EarlybirdDeal> findByStoreIdAndIsActiveTrue(String storeId);
+
+    /**
+     * 오늘의 HOT 모닝 세일 조회 (현재 유효한 얼리버드 딜이 있는 매장들)
+     * @param currentTime 현재 시간
+     * @return 얼리버드 딜이 있는 매장의 딜 정보 목록
+     */
+    @Query("""
+        SELECT d FROM EarlybirdDeal d 
+        WHERE d.isActive = true 
+        AND d.status = 'ACTIVE'
+        AND d.dealType = 'EARLYBIRD'
+        AND (d.validFrom IS NULL OR d.validFrom <= :currentTime)
+        AND (d.validUntil IS NULL OR d.validUntil >= :currentTime)
+        ORDER BY d.createdAt DESC
+        """)
+    List<EarlybirdDeal> findActiveEarlybirdDeals(@Param("currentTime") LocalDateTime currentTime);
 }
