@@ -76,6 +76,7 @@ public record ErrorResponse(
         INVALID_REQUEST("R001", "잘못된 요청입니다."),
         VALIDATION_FAILED("R002", "입력값 검증에 실패했습니다."),
         MISSING_PARAMETER("R003", "필수 파라미터가 누락되었습니다."),
+        NOT_FOUND("R004", "요청한 자원을 찾을 수 없습니다."),
         
         // 서버 에러
         INTERNAL_SERVER_ERROR("S001", "서버 내부 오류가 발생했습니다."),
@@ -151,4 +152,26 @@ public record ErrorResponse(
             .build();
         return ApiResponse.fail(error.message(), 500);
     }
+
+    // ErrorResponse record 내부(기존 static 메서드들 옆)에 추가
+    public static ApiResponse<ErrorResponse> error(int httpStatus, String message, String path) {
+        // HTTP → ErrorCode 매핑 (NOT_FOUND 없으면 INVALID_REQUEST로 대체해도 됨)
+        ErrorCode code = switch (httpStatus) {
+            case 400 -> ErrorCode.INVALID_REQUEST;
+            case 401 -> ErrorCode.UNAUTHORIZED;
+            case 403 -> ErrorCode.FORBIDDEN;
+            case 404 -> ErrorCode.NOT_FOUND;           // ← enum에 없다면 하나 추가하세요
+            default -> ErrorCode.INTERNAL_SERVER_ERROR;
+        };
+
+        var builder = Factory.create(code, path);
+        if (message != null && !message.isBlank()) {
+            builder = builder.message(message);        // 기본 메시지 대신 커스텀 메시지
+        }
+        ErrorResponse err = builder.build();
+
+        // 프로젝트 규격 유지: ApiResponse.fail(message, status)
+        return ApiResponse.fail(err.message(), httpStatus);
+    }
+
 }

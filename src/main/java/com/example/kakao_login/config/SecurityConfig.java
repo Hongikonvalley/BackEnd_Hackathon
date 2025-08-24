@@ -53,6 +53,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 로그인/로그아웃만 공개
                         .requestMatchers("/api/auth/login", "/api/auth/logout").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/auth/**").permitAll()
+
+                        // CORS preflight OPTIONS 허용
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/v1/**").permitAll()
 
                         // 공개 API (필요 시 조정)
                         .requestMatchers(HttpMethod.GET, "/api/v1/search/**", "/api/v1/stores/**", "/api/v1/users/points").permitAll()

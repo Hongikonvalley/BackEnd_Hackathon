@@ -5,11 +5,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.lang.IllegalArgumentException;
 
 /**
@@ -153,6 +156,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ErrorResponse.internalServerError("서버 내부 오류가 발생했습니다.", path));
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<?> handleRSE(ResponseStatusException e, HttpServletRequest req) {
+        HttpStatusCode status = e.getStatusCode();
+        var body = ErrorResponse.error(status.value(), e.getReason(), req.getRequestURI());
+        return ResponseEntity.status(status).body(body);
     }
 
 }

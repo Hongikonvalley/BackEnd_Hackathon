@@ -58,15 +58,31 @@ public class DataInitializer {
     // }
 
     private void initUser() {
-            String email = "mutsa@mutsa.shop";
-            String rawPw = "mutsa1234!";
-        userRepository.findByEmail(email).orElseGet(() -> userRepository.save(
-                    User.builder()
-                            .email(email)
-                            .password(encoder.encode(rawPw))
-                            .nickname("잉뉴")
-                            .build()
-            ));
+        String email = "mutsa@mutsa.shop";
+        String rawPw = "mutsa1234!";
+        String avatarUrl = "https://github.com/user-attachments/assets/b4b1c9b3-a619-474b-9ffc-e1c69309af09"; // ← 이걸 실제 이미지 직접 URL로 교체
+
+        userRepository.findByEmail(email).map(u -> {
+            boolean changed = false;
+            if (u.getNickname() == null || u.getNickname().isBlank()) {
+                u.setNickname("잉뉴");
+                changed = true;
+            }
+            if (avatarUrl != null && !avatarUrl.isBlank()
+                    && (u.getProfileImageUrl() == null || !avatarUrl.equals(u.getProfileImageUrl()))) {
+                u.setProfileImageUrl(avatarUrl);
+                changed = true;
+            }
+            if (changed) userRepository.save(u);
+            return u;
+        }).orElseGet(() -> userRepository.save(
+                User.builder()
+                        .email(email)
+                        .password(encoder.encode(rawPw))
+                        .nickname("잉뉴")
+                        .profileImageUrl(avatarUrl)
+                        .build()
+        ));
     }
 
     private void initGabiaeStore() {
