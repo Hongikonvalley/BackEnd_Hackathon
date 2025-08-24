@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 얼리버드 딜 컨트롤러
  */
 @RestController
-@RequestMapping("/api/deals")
+@RequestMapping("/api/v1/stores")
 @RequiredArgsConstructor
 @Slf4j
 public class EarlybirdDealController {
@@ -26,7 +26,7 @@ public class EarlybirdDealController {
      * 
      * @return HOT 모닝 세일 응답
      */
-    @GetMapping("/hot-morning-sales")
+    @GetMapping("/morning-sale")
     public ApiResponse<HotMorningSaleResponse> getHotMorningSales() {
         log.info("오늘의 HOT 모닝 세일 조회 API 호출");
         
