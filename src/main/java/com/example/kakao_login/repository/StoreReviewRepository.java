@@ -7,7 +7,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-
 /**
  * 매장 리뷰 Repository
  */
@@ -52,4 +51,5 @@ public interface StoreReviewRepository extends JpaRepository<StoreReview, String
      * 특정 사용자의 리뷰 개수 조회
      */
     long countByUserId(String userId);
+
 }
