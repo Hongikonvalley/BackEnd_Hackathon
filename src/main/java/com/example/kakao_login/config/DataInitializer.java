@@ -383,13 +383,13 @@ public class DataInitializer {
 
     private void initDefaultStoreView() {
         storeRepository.findByName("가비애").ifPresent(store -> {
-            LocalDate today = LocalDate.now();
+            LocalDate defaultDate = StoreView.DEFAULT_VIEW_DATE;
             storeViewRepository
-                    .findByStoreIdAndViewDateAndIsActiveTrue(store.getId(), today)
+                    .findByStoreIdAndViewDateAndIsActiveTrue(store.getId(), defaultDate)
                     .orElseGet(() -> storeViewRepository.save(
                             StoreView.builder()
                                     .storeId(store.getId())
-                                    .viewDate(today)
+                                    .viewDate(defaultDate)
                                     .viewCount(1)
                                     .isActive(true)
                                     .build()

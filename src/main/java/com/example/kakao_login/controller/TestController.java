@@ -67,11 +67,11 @@ public class TestController {
      */
     @GetMapping("/store-views/today")
     public ApiResponse<Object> getTodayStoreViews() {
-        java.time.LocalDate today = java.time.LocalDate.now();
-        var views = storeViewRepository.findByViewDateOrderByViewCountDesc(today);
+        java.time.LocalDate defaultDate = com.example.kakao_login.entity.StoreView.DEFAULT_VIEW_DATE;
+        var views = storeViewRepository.findByViewDateOrderByViewCountDesc(defaultDate);
         
         var result = new HashMap<String, Object>();
-        result.put("date", today.toString());
+        result.put("date", defaultDate.toString());
         result.put("total_views", views.size());
         result.put("views", views.stream().map(view -> {
             var viewData = new HashMap<String, Object>();
@@ -90,10 +90,10 @@ public class TestController {
     public ApiResponse<String> incrementStoreView(@RequestParam String storeId) {
         // StoreDetailService를 직접 주입받지 않고 여기서 로직 구현
         try {
-            java.time.LocalDate today = java.time.LocalDate.now();
+            java.time.LocalDate defaultDate = com.example.kakao_login.entity.StoreView.DEFAULT_VIEW_DATE;
             
             // 기존 조회수 레코드 조회
-            var existingView = storeViewRepository.findByStoreIdAndViewDateAndIsActiveTrue(storeId, today)
+            var existingView = storeViewRepository.findByStoreIdAndViewDateAndIsActiveTrue(storeId, defaultDate)
                 .orElse(null);
 
             if (existingView != null) {
@@ -104,7 +104,7 @@ public class TestController {
                 // 새 레코드 생성
                 var newView = com.example.kakao_login.entity.StoreView.builder()
                     .storeId(storeId)
-                    .viewDate(today)
+                        .viewDate(defaultDate)
                     .viewCount(1)
                     .isActive(true)
                     .build();

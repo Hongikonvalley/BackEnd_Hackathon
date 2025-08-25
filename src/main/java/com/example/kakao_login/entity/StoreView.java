@@ -20,6 +20,11 @@ import java.time.LocalDate;
 @Builder
 public class StoreView extends BaseEntity {
 
+    /**
+     * 조회수를 일자와 무관하게 누적하기 위한 기본 날짜
+     */
+    public static final LocalDate DEFAULT_VIEW_DATE = LocalDate.of(2000, 1, 1);
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;

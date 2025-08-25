@@ -162,10 +162,10 @@ public class StoreDetailService {
     @Transactional
     public void incrementStoreView(String storeId) {
         try {
-            LocalDate today = LocalDate.now();
+            LocalDate defaultDate = StoreView.DEFAULT_VIEW_DATE;
             
             // 기존 조회수 레코드 조회
-            StoreView existingView = storeViewRepository.findByStoreIdAndViewDateAndIsActiveTrue(storeId, today)
+            StoreView existingView = storeViewRepository.findByStoreIdAndViewDateAndIsActiveTrue(storeId, defaultDate)
                 .orElse(null);
 
             if (existingView != null) {
@@ -176,14 +176,14 @@ public class StoreDetailService {
                 // 새 레코드 생성
                 StoreView newView = StoreView.builder()
                     .storeId(storeId)
-                    .viewDate(today)
+                        .viewDate(defaultDate)
                     .viewCount(1)
                     .isActive(true)
                     .build();
                 storeViewRepository.save(newView);
             }
-            
-            log.debug("매장 조회수 증가 완료 - storeId: {}, date: {}", storeId, today);
+
+            log.debug("매장 조회수 증가 완료 - storeId: {}, date: {}", storeId, defaultDate);
             
         } catch (Exception e) {
             log.error("매장 조회수 증가 중 오류 - storeId: {}", storeId, e);
@@ -199,10 +199,10 @@ public class StoreDetailService {
         log.debug("오늘의 인기 매장 조회 시작");
 
         try {
-            LocalDate today = LocalDate.now();
-            
-            // 오늘의 최고 조회수 매장 조회
-            StoreView topStoreView = storeViewRepository.findTopByViewDateOrderByViewCountDesc(today)
+            LocalDate defaultDate = StoreView.DEFAULT_VIEW_DATE;
+
+            // 최고 조회수 매장 조회
+            StoreView topStoreView = storeViewRepository.findTopByViewDateOrderByViewCountDesc(defaultDate)
                 .orElse(null);
 
             if (topStoreView == null) {
