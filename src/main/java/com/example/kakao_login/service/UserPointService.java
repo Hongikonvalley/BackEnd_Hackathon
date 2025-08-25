@@ -196,19 +196,19 @@ public class UserPointService {
         int pointsToEarn = 10; // 기본 10포인트
         String reason = "리뷰 등록";
 
-        // 특별 보너스 포인트 적용 (기본 10포인트 대신 특별 포인트만 지급)
+        // 특별 보너스 포인트 적용 (기본 10포인트 + 특별 보너스 포인트)
         if (newReviewCount == 10) {
-            pointsToEarn = 50; // 기본 10포인트 대신 50포인트만
-            reason = "10번째 리뷰 등록";
+            pointsToEarn = 60; // 기본 10포인트 + 보너스 50포인트
+            reason = "10번째 리뷰 등록 (기본 10포인트 + 보너스 50포인트)";
         } else if (newReviewCount == 20) {
-            pointsToEarn = 100; // 기본 10포인트 대신 100포인트만
-            reason = "20번째 리뷰 등록";
+            pointsToEarn = 110; // 기본 10포인트 + 보너스 100포인트
+            reason = "20번째 리뷰 등록 (기본 10포인트 + 보너스 100포인트)";
         } else if (newReviewCount == 30) {
-            pointsToEarn = 50; // 기본 10포인트 대신 50포인트만
-            reason = "30번째 리뷰 등록";
+            pointsToEarn = 60; // 기본 10포인트 + 보너스 50포인트
+            reason = "30번째 리뷰 등록 (기본 10포인트 + 보너스 50포인트)";
         } else if (newReviewCount == 40) {
-            pointsToEarn = 50; // 기본 10포인트 대신 50포인트만
-            reason = "40번째 리뷰 등록";
+            pointsToEarn = 60; // 기본 10포인트 + 보너스 50포인트
+            reason = "40번째 리뷰 등록 (기본 10포인트 + 보너스 50포인트)";
         }
 
         // 포인트 적립 (내역 저장 없이)

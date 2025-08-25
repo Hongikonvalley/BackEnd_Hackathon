@@ -30,7 +30,7 @@ public class SearchRepository {
                AND (
                  (CAST(:kw AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_0900_ai_ci = '' COLLATE utf8mb4_0900_ai_ci)
                  OR s.name        COLLATE utf8mb4_0900_ai_ci LIKE CONCAT('%', CAST(:kw AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_0900_ai_ci, '%')
-                 OR s.description COLLATE utf8mb4_0900_ai_ci LIKE CONCAT('%', CAST(:kw AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_0900_ai_ci, '%')
+                 OR s.ai_recommendation COLLATE utf8mb4_0900_ai_ci LIKE CONCAT('%', CAST(:kw AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_0900_ai_ci, '%')
                )
             """);
         }
