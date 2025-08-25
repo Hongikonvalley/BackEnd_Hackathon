@@ -31,6 +31,11 @@ public class SearchRepository {
                  (CAST(:kw AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_0900_ai_ci = '' COLLATE utf8mb4_0900_ai_ci)
                  OR s.name        COLLATE utf8mb4_0900_ai_ci LIKE CONCAT('%', CAST(:kw AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_0900_ai_ci, '%')
                  OR s.ai_recommendation COLLATE utf8mb4_0900_ai_ci LIKE CONCAT('%', CAST(:kw AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_0900_ai_ci, '%')
+                 OR EXISTS (
+                      SELECT 1 FROM menu_items mi
+                       WHERE mi.store_id = s.id
+                         AND mi.name COLLATE utf8mb4_0900_ai_ci LIKE CONCAT('%', CAST(:kw AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_0900_ai_ci, '%')
+                 )
                )
             """);
         }
@@ -221,6 +226,7 @@ public class SearchRepository {
         var storeIds = rows.stream().map(r -> (String) r.get("id")).toList();
         Map<String, List<String>> tagsByStore = Map.of();
         Map<String, List<String>> catsByStore = Map.of();
+        Map<String, List<String>> menusByStore = Map.of();
 
         if (!storeIds.isEmpty()) {
             var p2 = new MapSqlParameterSource().addValue("ids", storeIds);
@@ -261,14 +267,36 @@ public class SearchRepository {
                 tmpCats.computeIfAbsent(sid, k -> new ArrayList<>()).add(name);
             }
             catsByStore = tmpCats;
+
+
+            // 4) 메뉴 배치 조회
+            var menuList = jdbc.query("""
+                SELECT mi.store_id, mi.name
+                  FROM menu_items mi
+                 WHERE mi.store_id IN (:ids)
+                 ORDER BY mi.sort_order ASC, mi.created_at ASC
+            """, p2, (rs, n) -> Map.of(
+                    "store_id", rs.getString("store_id"),
+                    "name", rs.getString("name")
+            ));
+            var tmpMenus = new HashMap<String, List<String>>();
+            for (var row : menuList) {
+                String sid = (String) row.get("store_id");
+                String name = (String) row.get("name");
+                tmpMenus.computeIfAbsent(sid, k -> new ArrayList<>()).add(name);
+            }
+            menusByStore = tmpMenus;
         }
 
-        // 4) DTO로 조립
+        // 5) DTO로 조립
         var items = new ArrayList<StoreSummaryDto>();
         for (var r : rows) {
             String sid = (String) r.get("id");
             var categories = catsByStore.getOrDefault(sid, List.of());
             var tags = tagsByStore.getOrDefault(sid, List.of());
+            var menus = menusByStore.getOrDefault(sid, List.of()).stream()
+                    .limit(3)
+                    .toList();
 
             items.add(new StoreSummaryDto(
                     sid,
@@ -285,6 +313,7 @@ public class SearchRepository {
                     (Boolean) r.get("is_favorite"),
                     categories,
                     tags,
+                    menus,
                     new StoreSummaryDto.Earlybird(
                             r.get("best_discount_pct") != null,
                             (Integer) r.get("best_discount_pct"),

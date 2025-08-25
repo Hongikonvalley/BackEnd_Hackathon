@@ -14,6 +14,7 @@ public record StoreSummaryDto(
         Boolean isFavorite,
         List<String> categories,
         List<String> tags,
+        List<String> menus,
         Earlybird earlybird
 ){
     public record Rating(Double avg, Integer count){}
