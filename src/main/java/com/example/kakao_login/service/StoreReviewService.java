@@ -303,8 +303,8 @@ public class StoreReviewService {
                 reviewImageRepository.saveAll(reviewImages);
             }
 
-            // 4. 포인트 획득 (리뷰 작성 시 10포인트)
-            userPointService.earnPoints(userId, 10);
+            // 4. 포인트 획득 (리뷰 작성 시 규칙 적용)
+            userPointService.earnPointsForReview(userId);
 
             // 5. DTO 변환
             StoreReviewsResponse.Review response = StoreReviewsResponse.Review.builder()

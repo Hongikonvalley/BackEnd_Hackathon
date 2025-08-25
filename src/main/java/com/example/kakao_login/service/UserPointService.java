@@ -70,6 +70,15 @@ public class UserPointService {
         userPoint.earnPoints(points);
         userPointRepository.save(userPoint);
 
+        // 포인트 적립 내역 저장
+        try {
+            PointHistory earnHistory = PointHistory.createEarnHistory(userId, points, "리뷰 등록");
+            pointHistoryRepository.save(earnHistory);
+            log.info("포인트 적립 내역 저장 완료 - userId: {}, points: {}, reason: {}", userId, points, "리뷰 등록");
+        } catch (Exception e) {
+            log.warn("포인트 적립 내역 저장 실패 - userId: {}, points: {}, error: {}", userId, points, e.getMessage());
+        }
+
         log.info("사용자 포인트 획득 - userId: {}, points: {}, balance: {}", 
             userId, points, userPoint.getPointBalance());
     }
@@ -187,23 +196,34 @@ public class UserPointService {
         int pointsToEarn = 10; // 기본 10포인트
         String reason = "리뷰 등록";
 
-        // 특별 보너스 포인트 적용
+        // 특별 보너스 포인트 적용 (기본 10포인트 대신 특별 포인트만 지급)
         if (newReviewCount == 10) {
-            pointsToEarn += 50;
+            pointsToEarn = 50; // 기본 10포인트 대신 50포인트만
             reason = "10번째 리뷰 등록";
         } else if (newReviewCount == 20) {
-            pointsToEarn += 100;
+            pointsToEarn = 100; // 기본 10포인트 대신 100포인트만
             reason = "20번째 리뷰 등록";
         } else if (newReviewCount == 30) {
-            pointsToEarn += 50;
+            pointsToEarn = 50; // 기본 10포인트 대신 50포인트만
             reason = "30번째 리뷰 등록";
         } else if (newReviewCount == 40) {
-            pointsToEarn += 50;
+            pointsToEarn = 50; // 기본 10포인트 대신 50포인트만
             reason = "40번째 리뷰 등록";
         }
 
-        // 포인트 적립
-        earnPoints(userId, pointsToEarn);
+        // 포인트 적립 (내역 저장 없이)
+        if (userId == null || pointsToEarn <= 0) {
+            return;
+        }
+
+        UserPoint userPoint = userPointRepository.findByUserId(userId)
+            .orElseGet(() -> {
+                UserPoint newPoint = UserPoint.create(userId);
+                return userPointRepository.save(newPoint);
+            });
+
+        userPoint.earnPoints(pointsToEarn);
+        userPointRepository.save(userPoint);
 
         // 포인트 적립 내역 저장
         PointHistory earnHistory = PointHistory.createEarnHistory(userId, pointsToEarn, reason);
