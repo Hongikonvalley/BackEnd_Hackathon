@@ -66,6 +66,7 @@ public class SecurityConfig {
 
                         // 공개 API (필요 시 조정)
                         .requestMatchers(HttpMethod.GET, "/api/v1/search/**", "/api/v1/stores/**", "/api/v1/users/points").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/users/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/stores/*/favorite").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/stores/*/favorite").permitAll()
                         
@@ -75,10 +76,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/stores/reviews/**").permitAll()
 
                         // 테스트 엔드포인트 허용 (GET, POST, PUT, DELETE 모두)
-                        .requestMatchers(HttpMethod.GET, "/api/v1/test/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/test/**").permitAll()
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/test/**").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/test/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/test/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/test/**").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/test/**").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/test/**").permitAll()
 
                         // 그 외는 인증 필요 (여기에 /api/auth/me 포함)
                         .anyRequest().authenticated()

@@ -26,6 +26,21 @@ import java.lang.IllegalArgumentException;
 public class GlobalExceptionHandler {
 
     /**
+     * 사용자를 찾을 수 없음 예외 처리 (404)
+     */
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<?> handleUserNotFound(
+        UserNotFoundException e, 
+        HttpServletRequest request
+    ) {
+        log.warn("사용자를 찾을 수 없음 - path: {}", request.getRequestURI());
+            
+        return ResponseEntity
+            .status(HttpStatus.NOT_FOUND)
+            .body(ErrorResponse.error(HttpStatus.NOT_FOUND.value(), e.getMessage(), request.getRequestURI()));
+    }
+
+    /**
      * 매장을 찾을 수 없음 예외 처리 (404)
      */
     @ExceptionHandler(StoreNotFoundException.class)
