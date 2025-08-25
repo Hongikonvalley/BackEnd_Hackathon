@@ -66,6 +66,7 @@ public class SecurityConfig {
 
                         // 공개 API (필요 시 조정)
                         .requestMatchers(HttpMethod.GET, "/api/v1/search/**", "/api/v1/stores/**", "/api/v1/users/points").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/*/points/history").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/stores/*/favorite").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/stores/*/favorite").permitAll()

@@ -2,6 +2,7 @@ package com.example.kakao_login.controller;
 
 import com.example.kakao_login.common.ApiResponse;
 import com.example.kakao_login.dto.point.PointResponse;
+import com.example.kakao_login.dto.point.PointHistoryResponse;
 import com.example.kakao_login.service.UserPointService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,19 @@ public class UserPointController {
         log.debug("사용자 포인트 조회 요청 - userId: {}", userId);
         
         PointResponse.PointBalanceResponse response = userPointService.getPointBalance(userId);
+        return ApiResponse.success(response);
+    }
+
+    /**
+     * 사용자 포인트 적립 내역 조회
+     */
+    @GetMapping("/{userId}/points/history")
+    public ApiResponse<PointHistoryResponse.PointHistoryListResponse> getPointHistory(
+        @PathVariable("userId") String userId
+    ) {
+        log.debug("사용자 포인트 적립 내역 조회 요청 - userId: {}", userId);
+        
+        PointHistoryResponse.PointHistoryListResponse response = userPointService.getPointHistory(userId);
         return ApiResponse.success(response);
     }
 }
