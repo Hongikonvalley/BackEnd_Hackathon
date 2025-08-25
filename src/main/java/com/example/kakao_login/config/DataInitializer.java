@@ -24,38 +24,42 @@ public class DataInitializer {
     private final StoreReviewRepository storeReviewRepository;
     private final ReviewImageRepository reviewImageRepository;
     private final MenuItemRepository menuItemRepository;
+    private final MenuBoardImageRepository menuBoardImageRepository;
     private final EarlybirdDealRepository earlybirdDealRepository;
     private final StoreViewRepository storeViewRepository;
 
-    // @Bean
-    // @Transactional
-    // CommandLineRunner initData() {
-    //     return args -> {
-    //         // 사용자 데이터 초기화
-    //         initUser();
-    //
-    //         // 가비애 매장 데이터 초기화
-    //         initGabiaeStore();
-    //
-    //         // 가비애 메뉴 데이터 초기화
-    //         initGabiaeMenus();
-    //
-    //         // 가비애 할인 데이터 초기화
-    //         initGabiaeDeals();
-    //
-    //         // 가비애 리뷰 데이터 초기화
-    //         initGabiaeReviews();
-    //
-    //         // 그랑주 카페 데이터 초기화
-    //         initGrangeCafe();
-    //
-    //         // 그랑주 카페 메뉴 데이터 초기화
-    //         initGrangeMenus();
-    //
-    //         // 그랑주 카페 리뷰 데이터 초기화
-    //         initGrangeReviews();
-    //     };
-    // }
+    @Bean
+    @Transactional
+    CommandLineRunner initData() {
+        return args -> {
+            // 사용자 데이터 초기화
+            initUser();
+
+            // 가비애 매장 데이터 초기화
+            initGabiaeStore();
+
+            // 가비애 메뉴 데이터 초기화
+            initGabiaeMenus();
+
+            // 가비애 메뉴판 이미지 데이터 초기화
+            initGabiaeMenuBoardImages();
+
+            // 가비애 할인 데이터 초기화
+            initGabiaeDeals();
+
+            // 가비애 리뷰 데이터 초기화
+            initGabiaeReviews();
+
+            // 그랑주 카페 데이터 초기화
+            initGrangeCafe();
+
+            // 그랑주 카페 메뉴 데이터 초기화
+            initGrangeMenus();
+
+            // 그랑주 카페 리뷰 데이터 초기화
+            initGrangeReviews();
+        };
+    }
 
     private void initUser() {
         String email = "mutsa@mutsa.shop";
@@ -372,6 +376,38 @@ public class DataInitializer {
         );
         
         reviewImageRepository.saveAll(images);
+    }
+
+    private void initGabiaeMenuBoardImages() {
+        // 가비애 매장 찾기
+        Store gabiaeStore = storeRepository.findByName("가비애").orElse(null);
+        if (gabiaeStore == null) {
+            return; // 매장이 없으면 메뉴판 이미지도 생성하지 않음
+        }
+        
+        String storeId = gabiaeStore.getId();
+        
+        // 이미 메뉴판 이미지가 있는지 확인
+        long existingMenuBoardImageCount = menuBoardImageRepository.countByStoreId(storeId);
+        if (existingMenuBoardImageCount > 0) {
+            return; // 이미 메뉴판 이미지가 있으면 생성하지 않음
+        }
+        
+        // 메뉴판 이미지 데이터 생성 (가비애 실제 메뉴판 이미지 URL 사용)
+        List<MenuBoardImage> menuBoardImages = Arrays.asList(
+                MenuBoardImage.builder()
+                        .storeId(storeId)
+                        .imageUrl("https://github.com/user-attachments/assets/84d6b4aa-12e9-40de-92e4-f85a512275d6")
+                        .sortOrder(1)
+                        .build(),
+                MenuBoardImage.builder()
+                        .storeId(storeId)
+                        .imageUrl("https://github.com/user-attachments/assets/6e86abc8-4f1b-4a7d-864b-5479cf0e51af")
+                        .sortOrder(2)
+                        .build()
+        );
+        
+        menuBoardImageRepository.saveAll(menuBoardImages);
     }
 
 

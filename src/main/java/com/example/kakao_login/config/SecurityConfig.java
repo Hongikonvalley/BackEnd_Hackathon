@@ -68,6 +68,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/search/**", "/api/v1/stores/**", "/api/v1/users/points").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/*/points/history").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/menu-board-images/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/stores/*/favorite").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/stores/*/favorite").permitAll()
                         
@@ -81,6 +82,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/test/**").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/test/**").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/api/test/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/test/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/test/**").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/test/**").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/test/**").permitAll()
 
                         // 그 외는 인증 필요 (여기에 /api/auth/me 포함)
                         .anyRequest().authenticated()
