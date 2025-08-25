@@ -4,6 +4,10 @@ import com.example.kakao_login.common.ApiResponse;
 import com.example.kakao_login.entity.*;
 import com.example.kakao_login.repository.*;
 import com.example.kakao_login.service.UserPointService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -232,5 +236,83 @@ public class TestController {
         } catch (Exception e) {
             return ApiResponse.fail("매장 삭제 중 오류 발생: " + e.getMessage(), 500);
         }
+    }
+
+    @GetMapping("/cookies")
+    public Map<String, Object> getCookies(HttpServletRequest request) {
+        Map<String, Object> result = new HashMap<>();
+        
+        // 모든 쿠키 정보
+        Cookie[] cookies = request.getCookies();
+        Map<String, String> cookieMap = new HashMap<>();
+        
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                cookieMap.put(cookie.getName(), cookie.getValue());
+            }
+        }
+        
+        result.put("cookies", cookieMap);
+        result.put("cookieCount", cookies != null ? cookies.length : 0);
+        
+        // 세션 정보
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            result.put("sessionId", session.getId());
+            result.put("sessionCreationTime", session.getCreationTime());
+            result.put("sessionLastAccessedTime", session.getLastAccessedTime());
+        } else {
+            result.put("sessionId", null);
+        }
+        
+        // 헤더 정보
+        result.put("userAgent", request.getHeader("User-Agent"));
+        result.put("origin", request.getHeader("Origin"));
+        result.put("referer", request.getHeader("Referer"));
+        
+        return result;
+    }
+
+    @PostMapping("/set-cookie")
+    public Map<String, Object> setTestCookie(HttpServletResponse response) {
+        Cookie testCookie = new Cookie("test-cookie", "test-value");
+        testCookie.setPath("/");
+        testCookie.setMaxAge(3600); // 1시간
+        response.addCookie(testCookie);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("message", "Test cookie set successfully");
+        result.put("cookieName", "test-cookie");
+        result.put("cookieValue", "test-value");
+        
+        return result;
+    }
+
+    @GetMapping("/session-info")
+    public Map<String, Object> getSessionInfo(HttpServletRequest request) {
+        Map<String, Object> result = new HashMap<>();
+        
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            result.put("sessionId", session.getId());
+            result.put("isNew", session.isNew());
+            result.put("creationTime", session.getCreationTime());
+            result.put("lastAccessedTime", session.getLastAccessedTime());
+            result.put("maxInactiveInterval", session.getMaxInactiveInterval());
+            
+            // 세션에 저장된 속성들
+            Map<String, Object> attributes = new HashMap<>();
+            java.util.Enumeration<String> attributeNames = session.getAttributeNames();
+            while (attributeNames.hasMoreElements()) {
+                String name = attributeNames.nextElement();
+                attributes.put(name, session.getAttribute(name));
+            }
+            result.put("attributes", attributes);
+        } else {
+            result.put("sessionId", null);
+            result.put("message", "No active session");
+        }
+        
+        return result;
     }
 }
